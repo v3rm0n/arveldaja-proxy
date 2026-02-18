@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-arveldaja Proxy - Review Changes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px 20px;
+        }
+
+        .company-info {
+            background: white;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .company-info h2 {
+            margin-bottom: 10px;
+            color: #1a365d;
+            font-size: 16px;
+        }
+
+        .company-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .company-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .company-field label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .company-info h2 {
+            font-size: 20px;
+            color: #1a365d;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .company-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .company-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .company-field label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .company-field span {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .bank-accounts {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .bank-accounts h3 {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .bank-accounts h3:hover {
+            color: #333;
+        }
+
+        .bank-accounts h3::after {
+            content: '▼';
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .bank-accounts.collapsed h3::after {
+            transform: rotate(-90deg);
+        }
+
+        .bank-account-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .bank-accounts.collapsed .bank-account-list {
+            max-height: 0;
+        }
+
+        .bank-account-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bank-account-item {
+            background: #f7fafc;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bank-account-item .bank-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .bank-account-item .account-no {
+            font-family: monospace;
+            color: #4a5568;
+        }
+
+        .changesets-section {
+            background: white;
+            border-radius: 6px;
+            padding: 12px 15px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .changesets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .changesets-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .filters {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .filters button {
+            padding: 5px 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .filters button:hover {
+            background: #f7fafc;
+        }
+
+        .filters button.active {
+            background: #1a365d;
+            color: white;
+            border-color: #1a365d;
+        }
+
+        .btn-create {
+            padding: 6px 12px;
+            background: #1a365d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-create:hover {
+            background: #2c5282;
+        }
+
+        .changesets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .changesets-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .btn-create {
+            background: #1a365d;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-create:hover {
+            background: #2c5282;
+        }
+
+        .changeset-card {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .changeset-header {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .changeset-header:hover {
+            background: #f7fafc;
+        }
+
+        .changeset-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .changeset-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .changeset-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .changeset-header:hover {
+            background: #e9ecef;
+        }
+
+        .changeset-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .changeset-meta {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .changeset-changes {
+            padding: 10px 20px 20px;
+        }
+
+        .changeset-changes .change-card {
+            margin-bottom: 10px;
+            box-shadow: none;
+            border: 1px solid #e9ecef;
+        }
+
+        .changeset-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 8px 15px;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .standalone-changes {
+            margin-top: 30px;
+        }
+
+        .standalone-changes h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .number {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .stat-card.pending .number { color: #d69e2e; }
+        .stat-card.approved .number { color: #38a169; }
+        .stat-card.rejected .number { color: #e53e3e; }
+
+        .filters {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filters button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .filters button:hover {
+            background: #f0f0f0;
+        }
+
+        .filters button.active {
+            background: #1a365d;
+            color: white;
+            border-color: #1a365d;
+        }
+
+        .changes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .change-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .change-header {
+            padding: 8px 12px;
+            background: #f7fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .change-body {
+            padding: 10px;
+        }
+
+        .change-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .change-header .left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .method-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .method-badge.post { background: #c6f6d5; color: #22543d; }
+        .method-badge.patch { background: #feebc8; color: #744210; }
+        .method-badge.put { background: #bee3f8; color: #2a4365; }
+        .method-badge.delete { background: #fed7d7; color: #742a2a; }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: #fefcbf;
+            color: #744210;
+        }
+
+        .status-badge.approved {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-badge.rejected {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .change-body {
+            padding: 20px;
+        }
+
+        .endpoint {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+
+        .timestamp {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .change-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        .change-content pre {
+            margin: 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-approve {
+            background: #38a169;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #2f855a;
+        }
+
+        .btn-reject {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #c53030;
+        }
+
+        .btn-view {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #3182ce;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .journal-entry {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .journal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .journal-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .journal-date {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .journal-lines {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .journal-lines th,
+        .journal-lines td {
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .journal-lines th {
+            font-weight: 600;
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .account-cell {
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .amount {
+            font-family: 'Monaco', monospace;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .debit { color: #38a169; }
+        .credit { color: #e53e3e; }
+
+        .journal-total {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e2e8f0;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .amount {
+            font-family: 'Monaco', monospace;
+            text-align: right;
+        }
+
+        .amount.debit {
+            color: #38a169;
+        }
+
+        .amount.credit {
+            color: #e53e3e;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .diff-view {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .diff-line {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            padding: 2px 0;
+            white-space: pre-wrap;
+        }
+
+        .diff-added {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .diff-removed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .accounts-section {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .accounts-section h3 {
+            padding: 10px 15px;
+            margin: 0;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            user-select: none;
+        }
+
+        .accounts-section h3:hover {
+            background: #e9ecef;
+        }
+
+        .accounts-section .toggle-icon {
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+
+        .accounts-section.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .accounts-content {
+            max-height: 500px;
+            overflow: auto;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .accounts-section.collapsed .accounts-content {
+            max-height: 0;
+        }
+
+        .accounts-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .accounts-table th,
+        .accounts-table td {
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .accounts-table th {
+            font-weight: 600;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f7fafc;
+            position: sticky;
+            top: 0;
+        }
+
+        .accounts-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .accounts-table .account-code {
+            font-family: 'Monaco', monospace;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .loading-small {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding-top: 30px;">
+        <div class="company-info" id="company-info" style="display: none;">
+            <h2 id="company-name">Loading company info...</h2>
+            <div class="company-details" id="company-details">
+                <!-- Company details will be loaded here -->
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card pending">
+                <h3>Pending</h3>
+                <div class="number" id="stat-pending">-</div>
+            </div>
+            <div class="stat-card approved">
+                <h3>Approved</h3>
+                <div class="number" id="stat-approved">-</div>
+            </div>
+            <div class="stat-card rejected">
+                <h3>Rejected</h3>
+                <div class="number" id="stat-rejected">-</div>
+            </div>
+        </div>
+
+        <div class="accounts-section collapsed" id="accounts-section">
+            <h3 onclick="toggleAccounts()">
+                Chart of Accounts
+                <span class="toggle-icon">▼</span>
+            </h3>
+            <div class="accounts-content" id="accounts-content">
+                <div class="loading-small">Loading accounts...</div>
+            </div>
+        </div>
+
+        <div class="changesets-section" id="changesets-section">
+            <div class="changesets-header">
+                <h2>Pending Changes</h2>
+                <button class="btn-create" onclick="showCreateChangesetModal()">+ New Changeset</button>
+            </div>
+            <div class="filters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="pending">Pending</button>
+                <button data-filter="approved">Approved</button>
+                <button data-filter="rejected">Rejected</button>
+            </div>
+            <div id="error" class="error hidden"></div>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="changesets-list"></div>
+            <div id="empty" class="empty-state hidden">
+                <h2>No changes pending</h2>
+                <p>When an AI agent makes changes, they will appear here for your review.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">Confirm Action</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" id="reasonGroup">
+                    <label for="reason">Reason (optional)</label>
+                    <textarea id="reason" rows="3" placeholder="Enter reason for rejection..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-approve" id="modalConfirm" onclick="confirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChanges = [];
+        let currentFilter = 'all';
+        let pendingAction = null;
+        let accountsCache = null;
+
+        // Get account name from cache
+        function getAccountName(accountCode) {
+            if (!accountsCache) return '';
+            const account = accountsCache.find(acc => String(acc.id) === String(accountCode));
+            return account ? (account.name_est || account.name_eng || '') : '';
+        }
+
+        // Load accounts into cache
+        async function loadAccountsCache() {
+            try {
+                const res = await fetch('/api/accounts');
+                const data = await res.json();
+                if (data.success && data.accounts) {
+                    accountsCache = data.accounts;
+                }
+            } catch (err) {
+                console.error('Failed to load accounts cache:', err);
+            }
+        }
+
+        // Load accounts cache on page load
+        loadAccountsCache();
+
+        // Load company info
+        async function loadCompanyInfo() {
+            try {
+                const res = await fetch('/api/company');
+                const data = await res.json();
+                
+                if (data.success && data.company) {
+                    const company = data.company;
+                    document.getElementById('company-name').textContent = company.name;
+                    
+                    let detailsHtml = '';
+                    
+                    if (company.address) {
+                        detailsHtml += `
+                            <div class="company-field">
+                                <label>Address</label>
+                                <span>${company.address}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (company.email) {
+                        detailsHtml += `
+                            <div class="company-field">
+                                <label>Email</label>
+                                <span>${company.email}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (company.phone) {
+                        detailsHtml += `
+                            <div class="company-field">
+                                <label>Phone</label>
+                                <span>${company.phone}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (company.website) {
+                        detailsHtml += `
+                            <div class="company-field">
+                                <label>Website</label>
+                                <span>${company.website}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (company.vatNumber) {
+                        detailsHtml += `
+                            <div class="company-field">
+                                <label>VAT Number</label>
+                                <span>${company.vatNumber}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (company.bankAccounts && company.bankAccounts.length > 0) {
+                        const bankList = company.bankAccounts.map(ba => {
+                            const bankName = ba.account_name_est || ba.account_name_eng || 'Unknown Bank';
+                            return `
+                                <div class="bank-account-item">
+                                    <span class="bank-name">${bankName}</span>
+                                    <span class="account-no">${ba.iban_code || ba.account_no}</span>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        detailsHtml += `
+                            <div class="bank-accounts collapsed" style="grid-column: 1 / -1;" onclick="toggleBankAccounts(this)">
+                                <h3>Bank Accounts (${company.bankAccounts.length})</h3>
+                                <div class="bank-account-list">
+                                    ${bankList}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('company-details').innerHTML = detailsHtml;
+                    document.getElementById('company-info').style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Failed to load company info:', err);
+                // Silently fail - company info is not critical
+            }
+        }
+
+        // Toggle bank accounts visibility
+        function toggleBankAccounts(element) {
+            element.classList.toggle('collapsed');
+        }
+
+        // Toggle accounts section
+        function toggleAccounts() {
+            const section = document.getElementById('accounts-section');
+            section.classList.toggle('collapsed');
+            
+            // Load accounts if not already loaded
+            const content = document.getElementById('accounts-content');
+            if (!section.classList.contains('collapsed') && content.innerHTML.includes('Loading')) {
+                // Set default date to today
+                const dateInput = document.getElementById('balance-date');
+                if (dateInput && !dateInput.value) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+                loadAccountsWithBalances();
+            }
+        }
+
+        // Load account list (balances not available via API)
+        async function loadAccountsWithBalances() {
+            const content = document.getElementById('accounts-content');
+            
+            content.innerHTML = `
+                <div class="loading-small">Loading accounts...</div>
+            `;
+            
+            try {
+                console.log('Fetching accounts...');
+                const res = await fetch('/api/accounts');
+                console.log('Accounts response status:', res.status);
+                
+                const data = await res.json();
+                console.log('Accounts data:', data);
+                
+                if (!data.success || !data.accounts) {
+                    content.innerHTML = `
+                        <div class="loading-small" style="color: #e53e3e;">
+                            Failed to load accounts: ${data.error || 'Unknown error'}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const accounts = Array.isArray(data.accounts) ? data.accounts : [];
+                
+                if (accounts.length === 0) {
+                    content.innerHTML = `<div class="loading-small">No accounts found</div>`;
+                    return;
+                }
+                
+                // Sort by account id
+                accounts.sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+                
+                const rowsHtml = accounts.map(acc => {
+                    const code = String(acc.id || '-');
+                    const name = acc.name_est || acc.name_eng || acc.name || '-';
+                    const type = acc.account_type_est || acc.account_type_eng || '';
+                    
+                    return `
+                        <tr>
+                            <td class="account-code">${code}</td>
+                            <td>${name}</td>
+                            <td style="color: #666; font-size: 13px;">${type}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                content.innerHTML = `
+                    <div style="padding: 10px 20px; background: #fffbeb; border-bottom: 1px solid #fcd34d; color: #92400e; font-size: 13px;">
+                        <strong>Note:</strong> Account balances not available via e-Financials demo API. 
+                        Showing chart of accounts only.
+                    </div>
+                    <table class="accounts-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                `;
+            } catch (err) {
+                console.error('Failed to load accounts:', err);
+                content.innerHTML = `
+                    <div class="loading-small" style="color: #e53e3e;">
+                        Error: ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load changesets
+        async function loadChangesets() {
+            showLoading();
+            hideError();
+            
+            try {
+                const url = currentFilter === 'all' 
+                    ? '/api/changesets' 
+                    : `/api/changesets?status=${currentFilter}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load changesets');
+                }
+                
+                hideLoading();
+                renderChangesets(data.changesets);
+                loadStats();
+            } catch (err) {
+                showError(err.message);
+                hideLoading();
+            }
+        }
+
+        // Render changesets
+        function renderChangesets(changesets) {
+            const container = document.getElementById('changesets-list');
+            const emptyState = document.getElementById('empty');
+            
+            if (!changesets || changesets.length === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+            
+            container.innerHTML = changesets.map(cs => `
+                <div class="changeset-card" data-id="${cs.id}">
+                    <div class="changeset-header" onclick="toggleChangeset(this)">
+                        <div>
+                            <div class="changeset-title">${escapeHtml(cs.name)}</div>
+                            <div class="changeset-meta">
+                                ${cs.description ? escapeHtml(cs.description) : ''} 
+                                ${cs.description ? '•' : ''}
+                                <span class="status-badge ${cs.status}">${cs.status}</span>
+                                • ${cs.changesCount || 0} change${cs.changesCount !== 1 ? 's' : ''}
+                                • ${formatDate(cs.createdAt)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="changeset-changes" id="changeset-changes-${cs.id}" style="display: none;">
+                        <div class="loading">Loading changes...</div>
+                    </div>
+                    ${cs.status === 'pending' ? `
+                        <div class="changeset-actions">
+                            <button class="btn btn-reject" onclick="rejectChangeset('${cs.id}', event)">Reject All</button>
+                            <button class="btn btn-approve" onclick="approveChangeset('${cs.id}', event)">Approve All</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Toggle changeset visibility
+        async function toggleChangeset(header) {
+            const card = header.closest('.changeset-card');
+            const changesDiv = card.querySelector('.changeset-changes');
+            const changesetId = card.dataset.id;
+            
+            if (changesDiv.style.display === 'none') {
+                changesDiv.style.display = 'block';
+                // Load changes for this changeset
+                try {
+                    const res = await fetch(`/api/changesets/${changesetId}`);
+                    const data = await res.json();
+                    
+                    if (data.success && data.changes.length > 0) {
+                        changesDiv.innerHTML = data.changes.map(change => renderChangeCard(change)).join('');
+                    } else {
+                        changesDiv.innerHTML = '<p style="color: #666; padding: 10px;">No changes in this changeset.</p>';
+                    }
+                } catch (err) {
+                    changesDiv.innerHTML = '<p style="color: #e53e3e; padding: 10px;">Failed to load changes.</p>';
+                }
+            } else {
+                changesDiv.style.display = 'none';
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Approve entire changeset
+        async function approveChangeset(changesetId, event) {
+            event.stopPropagation();
+            
+            if (!confirm('Approve all changes in this changeset?')) return;
+            
+            try {
+                const res = await fetch(`/api/changesets/${changesetId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                });
+                
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to approve changeset');
+                }
+                
+                loadChangesets();
+                loadStats();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Reject entire changeset
+        async function rejectChangeset(changesetId, event) {
+            event.stopPropagation();
+            
+            const reason = prompt('Enter reason for rejection (optional):');
+            if (reason === null) return; // Cancelled
+            
+            try {
+                const res = await fetch(`/api/changesets/${changesetId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason }),
+                });
+                
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to reject changeset');
+                }
+                
+                loadChangesets();
+                loadStats();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('stat-pending').textContent = data.stats.pending;
+                    document.getElementById('stat-approved').textContent = data.stats.approved;
+                    document.getElementById('stat-rejected').textContent = data.stats.rejected;
+                }
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+            }
+        }
+
+        // Transform journal body to API format (same logic as backend)
+        function transformJournalBody(bodyObj) {
+            if (!bodyObj.transactions || bodyObj.postings) {
+                return bodyObj;
+            }
+            
+            const postings = [];
+            for (const tx of bodyObj.transactions) {
+                if (tx.debit_account) {
+                    postings.push({
+                        accounts_id: parseInt(tx.debit_account),
+                        type: 'D',
+                        amount: parseFloat(tx.amount),
+                        base_amount: parseFloat(tx.amount),
+                        cl_currencies_id: 'EUR',
+                        is_deleted: false,
+                    });
+                }
+                if (tx.credit_account) {
+                    postings.push({
+                        accounts_id: parseInt(tx.credit_account),
+                        type: 'C',
+                        amount: parseFloat(tx.amount),
+                        base_amount: parseFloat(tx.amount),
+                        cl_currencies_id: 'EUR',
+                        is_deleted: false,
+                    });
+                }
+            }
+            
+            const apiBody = { ...bodyObj, postings };
+            delete apiBody.transactions;
+            return apiBody;
+        }
+
+        // Render API request preview
+        function renderApiRequest(change, bodyObj) {
+            const isJournal = change.path.includes('/journals');
+            const apiPath = change.path.replace(/^\/proxy/, '');
+            const transformedBody = isJournal && bodyObj ? transformJournalBody(bodyObj) : bodyObj;
+            
+            return `
+                <div style="margin-top: 15px; padding: 15px; background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 6px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: #2a4365;">
+                        API Request Preview
+                    </div>
+                    <div style="margin-bottom: 8px; font-family: monospace; font-size: 13px;">
+                        <span style="color: #38a169; font-weight: 600;">${change.method}</span>
+                        <span style="color: #4a5568;">${apiPath}</span>
+                    </div>
+                    <details style="margin-top: 10px;">
+                        <summary style="cursor: pointer; color: #2b6cb0; font-size: 13px;">View request body</summary>
+                        <pre style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 300px;">${JSON.stringify(transformedBody, null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+        }
+
+        // Render a single change card (simplified - no technical details)
+        function renderChangeCard(change) {
+            const isPending = change.status === 'pending';
+            const bodyObj = change.body ? JSON.parse(change.body) : null;
+            const isJournal = change.path.includes('/journals');
+            const responseObj = change.response ? JSON.parse(change.response) : null;
+            
+            return `
+                <div class="change-card" data-id="${change.id}">
+                    <div class="change-body" style="padding: 15px 20px;">
+                        ${isJournal && bodyObj ? renderJournalEntry(bodyObj) : renderJsonContent(bodyObj)}
+                        ${isPending && bodyObj ? renderApiRequest(change, bodyObj) : ''}
+                        ${!isPending && responseObj ? renderApiResponse(responseObj) : ''}
+                        ${!isPending && change.error ? renderError(change.error) : ''}
+                    </div>
+                    ${isPending ? `
+                        <div class="actions">
+                            <button class="btn btn-reject" onclick="rejectChange('${change.id}')">Reject</button>
+                            <button class="btn btn-approve" onclick="approveChange('${change.id}')">Approve</button>
+                        </div>
+                    ` : `
+                        <div class="actions">
+                            <span class="status-badge ${change.status}" style="margin-right: 10px;">${change.status}</span>
+                            <span style="color: #666; font-size: 13px;">${formatDate(change.createdAt)}</span>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        // Render API response with key info
+        function renderApiResponse(response) {
+            let summary = '';
+            
+            // Extract key info from response
+            if (response.id) {
+                summary += `<div style="margin-bottom: 8px;"><strong>Created ID:</strong> ${response.id}</div>`;
+            }
+            if (response.no) {
+                summary += `<div style="margin-bottom: 8px;"><strong>Journal No:</strong> ${response.no}</div>`;
+            }
+            if (response.status) {
+                summary += `<div style="margin-bottom: 8px;"><strong>Status:</strong> ${response.status}</div>`;
+            }
+            
+            return `
+                <div style="margin-top: 15px; padding: 15px; background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: #22543d;">
+                        API Response
+                    </div>
+                    ${summary}
+                    <details style="margin-top: 10px;">
+                        <summary style="cursor: pointer; color: #2f855a; font-size: 13px;">View full response</summary>
+                        <pre style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 300px;">${JSON.stringify(response, null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+        }
+
+        // Render error message
+        function renderError(error) {
+            return `
+                <div style="margin-top: 15px; padding: 15px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; color: #742a2a;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Error</div>
+                    <div>${escapeHtml(error)}</div>
+                </div>
+            `;
+        }
+
+        // Render journal entry
+        function renderJournalEntry(data) {
+            const lines = data.transactions || [];
+            let totalDebit = 0;
+            let totalCredit = 0;
+            
+            // Generate table rows - each transaction creates 2 rows (debit and credit)
+            const tableRows = lines.flatMap(line => {
+                const amount = parseFloat(line.amount || 0);
+                const rows = [];
+                
+                // Debit side
+                if (line.debit_account) {
+                    totalDebit += amount;
+                    const debitName = getAccountName(line.debit_account);
+                    rows.push(`
+                        <tr>
+                            <td class="account-cell">
+                                ${line.debit_account}
+                                ${debitName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${debitName}</span>` : ''}
+                            </td>
+                            <td>${line.description || ''}</td>
+                            <td class="amount debit">${formatAmount(line.amount)}</td>
+                            <td class="amount"></td>
+                        </tr>
+                    `);
+                }
+                
+                // Credit side
+                if (line.credit_account) {
+                    totalCredit += amount;
+                    const creditName = getAccountName(line.credit_account);
+                    rows.push(`
+                        <tr>
+                            <td class="account-cell">
+                                ${line.credit_account}
+                                ${creditName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${creditName}</span>` : ''}
+                            </td>
+                            <td>${line.description || ''}</td>
+                            <td class="amount"></td>
+                            <td class="amount credit">${formatAmount(line.amount)}</td>
+                        </tr>
+                    `);
+                }
+                
+                return rows;
+            }).join('');
+            
+            return `
+                <div class="journal-entry">
+                    <div class="journal-header">
+                        <div>
+                            <div class="journal-title">Journal Entry: ${data.no || 'New'}</div>
+                            <div>${data.description || ''}</div>
+                        </div>
+                        <div class="journal-date">${data.effective_date || ''}</div>
+                    </div>
+                    <table class="journal-lines">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Description</th>
+                                <th class="amount">Debit (€)</th>
+                                <th class="amount">Credit (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                    <div class="journal-total">
+                        <span>Total Debits: ${formatAmount(totalDebit)}</span>
+                        <span>Total Credits: ${formatAmount(totalCredit)}</span>
+                        <span style="color: ${Math.abs(totalDebit - totalCredit) < 0.01 ? '#38a169' : '#e53e3e'};">
+                            ${Math.abs(totalDebit - totalCredit) < 0.01 ? '✓ Balanced' : '✗ Unbalanced'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render JSON content
+        function renderJsonContent(data) {
+            if (!data) return '';
+            return `
+                <div class="change-content">
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        // Format amount
+        function formatAmount(amount) {
+            if (!amount) return '';
+            const num = parseFloat(amount);
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+        }
+
+        // Format date
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString();
+        }
+
+        // Show/hide helpers
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('changesets-list').classList.add('hidden');
+            document.getElementById('empty').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showError(msg) {
+            document.getElementById('error').textContent = msg;
+            document.getElementById('error').classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('error').classList.add('hidden');
+        }
+
+        // Actions
+        function approveChange(id) {
+            pendingAction = { id, action: 'approve' };
+            document.getElementById('modal-title').textContent = 'Approve Change';
+            document.getElementById('modalConfirm').textContent = 'Approve';
+            document.getElementById('modalConfirm').className = 'btn btn-approve';
+            document.getElementById('reasonGroup').classList.add('hidden');
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function rejectChange(id) {
+            pendingAction = { id, action: 'reject' };
+            document.getElementById('modal-title').textContent = 'Reject Change';
+            document.getElementById('modalConfirm').textContent = 'Reject';
+            document.getElementById('modalConfirm').className = 'btn btn-reject';
+            document.getElementById('reasonGroup').classList.remove('hidden');
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            pendingAction = null;
+        }
+
+        async function confirmAction() {
+            if (!pendingAction) return;
+            
+            const reason = document.getElementById('reason').value;
+            
+            const endpoint = pendingAction.action === 'approve' 
+                ? `/api/changes/${pendingAction.id}/approve`
+                : `/api/changes/${pendingAction.id}/reject`;
+            
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason }),
+                });
+                
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Action failed');
+                }
+                
+                closeModal();
+                loadChangesets();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Show create changeset modal
+        function showCreateChangesetModal() {
+            const name = prompt('Enter changeset name:');
+            if (!name || !name.trim()) return;
+            
+            const description = prompt('Enter description (optional):');
+            
+            createChangeset(name.trim(), description?.trim());
+        }
+
+        // Create a new changeset
+        async function createChangeset(name, description) {
+            try {
+                const res = await fetch('/api/changesets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description }),
+                });
+                
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to create changeset');
+                }
+                
+                loadChangesets();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.changesets-section .filters button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.changesets-section .filters button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                loadChangesets();
+            });
+        });
+
+        // Initial load
+        loadCompanyInfo();
+        loadChangesets();
+        
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadChangesets();
+        }, 30000);
+    </script>
+</body>
+</html>
