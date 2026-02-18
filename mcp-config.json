@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "arveldaja": {
+      "command": "node",
+      "args": ["/Users/maidok/.kimaki/projects/arveldaja-proxy/dist/mcp-server.js"],
+      "env": {
+        "API_KEY_ID": "${API_KEY_ID}",
+        "API_KEY_PUBLIC": "${API_KEY_PUBLIC}",
+        "API_KEY_PASSWORD": "${API_KEY_PASSWORD}",
+        "API_BASE_URL": "https://demo-rmp-api.rik.ee/v1"
+      }
+    }
+  }
+}

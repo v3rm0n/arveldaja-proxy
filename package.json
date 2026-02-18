@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "description": "Safe proxy for Estonian e-Financials API with human-in-the-loop approval",
   "main": "dist/index.js",
+  "bin": {
+    "arveldaja-mcp": "./dist/mcp-server.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "mcp": "node dist/mcp-server.js",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.3.1",
