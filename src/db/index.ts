@@ -427,6 +427,29 @@ export async function deleteChangeset(id: string): Promise<void> {
   });
 }
 
+export async function deleteChangesets(status?: 'pending' | 'approved' | 'rejected'): Promise<number> {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error('Database not initialized'));
+      return;
+    }
+
+    const query = status
+      ? 'DELETE FROM changesets WHERE status = ?'
+      : 'DELETE FROM changesets';
+    const params = status ? [status] : [];
+
+    db.run(query, params, function (err) {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(this.changes ?? 0);
+    });
+  });
+}
+
 export async function moveChangesToChangeset(changeIds: string[], changesetId: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!db) {

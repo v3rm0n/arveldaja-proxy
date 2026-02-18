@@ -39,6 +39,13 @@ export async function executeChange(change: PendingChange): Promise<any> {
   if (change.body && change.path.includes('/journals')) {
     try {
       const bodyObj = JSON.parse(change.body);
+      const normalizeJournalPayload = (payload: any) => {
+        if (payload.description && !payload.title) {
+          payload.title = payload.description;
+        }
+        return payload;
+      };
+
       if (bodyObj.transactions && !bodyObj.postings) {
         // Convert simplified format to API format
         const postings = [];
@@ -65,12 +72,14 @@ export async function executeChange(change: PendingChange): Promise<any> {
           }
         }
         
-        const apiBody = {
+        const apiBody = normalizeJournalPayload({
           ...bodyObj,
           postings,
-        };
+        });
         delete apiBody.transactions;
         requestBody = JSON.stringify(apiBody);
+      } else {
+        requestBody = JSON.stringify(normalizeJournalPayload(bodyObj));
       }
     } catch (e) {
       console.error('Failed to transform body:', e);

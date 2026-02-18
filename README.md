@@ -92,6 +92,7 @@ Open http://localhost:3000/review to:
 - See all pending changes with journal entry visualization
 - Approve or reject individual changes
 - Approve or reject entire changesets
+- Delete individual changesets or bulk-delete filtered changesets
 - View executed changes and their results
 
 ### For AI Agents (MCP Server)
@@ -108,7 +109,7 @@ query_api with endpoint: "/accounts"
 propose_change:
   endpoint: "/journals"
   method: "POST"
-  data: {
+  body: {
     "no": "J-2024-001",
     "effective_date": "2024-01-15",
     "description": "Office supplies",
@@ -195,7 +196,14 @@ curl -X POST http://localhost:3000/proxy/v1/journals \
 - `GET /api/changesets` - List changesets
 - `GET /api/changesets/:id` - Get changeset with changes
 - `POST /api/changesets/:id/approve` - Approve all in changeset
+- `DELETE /api/changesets/:id` - Delete one changeset and its captured changes
+- `DELETE /api/changesets` - Delete all changesets (optional `?status=pending|approved|rejected`)
 - `GET /api/stats` - Get statistics
+
+### Journal payload behavior
+
+- For `/journals` writes, the proxy converts simplified `transactions` to API `postings`.
+- If a journal payload contains `description` but no `title`, the proxy automatically sets `title = description` so the journal description is visible in e-Financials.
 
 ### UI Routes
 

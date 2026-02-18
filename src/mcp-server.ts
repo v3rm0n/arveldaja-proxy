@@ -67,16 +67,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               enum: ['POST', 'PUT', 'PATCH', 'DELETE'],
               description: 'HTTP method for the change',
             },
+            body: {
+              type: 'object',
+              description: 'Request body payload for the change',
+            },
             data: {
               type: 'object',
-              description: 'Request body data',
+              description: 'Deprecated alias for request body payload (use body)',
             },
             description: {
               type: 'string',
               description: 'Human-readable description of what this change does (for the review UI)',
             },
           },
-          required: ['endpoint', 'method', 'data'],
+          required: ['endpoint', 'method'],
         },
       },
       {
@@ -192,7 +196,18 @@ async function handleQueryApi(args: any) {
 }
 
 async function handleProposeChange(args: any) {
-  const { endpoint, method, data, description } = args;
+  const { endpoint, method, description } = args;
+  const bodyPayload = args?.body ?? args?.data ?? null;
+
+  if (!endpoint || !method) {
+    throw new Error('endpoint and method are required');
+  }
+
+  const normalizedMethod = String(method).toUpperCase();
+  const bodyRequiredMethods = ['POST', 'PUT', 'PATCH'];
+  if (bodyRequiredMethods.includes(normalizedMethod) && bodyPayload === null) {
+    throw new Error('body is required for POST, PUT, and PATCH methods');
+  }
   
   // This simulates what the proxy does - capture the change
   // In reality, this would make the request to the proxy which captures it
@@ -204,12 +219,12 @@ async function handleProposeChange(args: any) {
   // Create a changeset for this change
   const changesetName = description 
     ? `Proposed: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
-    : `Proposed ${method} to ${endpoint}`;
+    : `Proposed ${normalizedMethod} to ${endpoint}`;
   
   const changeset = {
     id: uuidv4(),
     name: changesetName,
-    description: description || `Proposed ${method} request to ${endpoint}`,
+    description: description || `Proposed ${normalizedMethod} request to ${endpoint}`,
     status: 'pending' as const,
     createdAt: new Date().toISOString(),
     resolvedAt: null,
@@ -222,11 +237,11 @@ async function handleProposeChange(args: any) {
   const change = {
     id: uuidv4(),
     changesetId: changeset.id,
-    method: method.toUpperCase(),
+    method: normalizedMethod,
     path: endpoint.startsWith('/') ? endpoint : `/${endpoint}`,
     originalUrl: endpoint,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: bodyPayload === null ? null : JSON.stringify(bodyPayload),
     query: {},
     status: 'pending' as const,
     createdAt: new Date().toISOString(),
@@ -249,6 +264,7 @@ async function handleProposeChange(args: any) {
           changeId: change.id,
           endpoint: change.path,
           method: change.method,
+          body: bodyPayload,
           description: description || 'No description provided',
           note: 'This change is NOT executed yet. A human must review and approve it via the web UI at http://localhost:3000/review',
         }, null, 2),

@@ -7,6 +7,7 @@ import {
   updateChangesetStatus,
   updatePendingChangeStatus,
   deleteChangeset,
+  deleteChangesets,
   moveChangesToChangeset,
 } from '../db';
 import { executeChange } from '../utils/executor';
@@ -228,6 +229,24 @@ router.delete('/changesets/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting changeset:', error);
     res.status(500).json({ success: false, error: 'Failed to delete changeset' });
+  }
+});
+
+// Delete all changesets (optionally by status)
+router.delete('/changesets', async (req, res) => {
+  try {
+    const status = req.query.status as 'pending' | 'approved' | 'rejected' | undefined;
+    const deletedCount = await deleteChangesets(status);
+
+    res.json({
+      success: true,
+      message: `Deleted ${deletedCount} changeset${deletedCount === 1 ? '' : 's'}`,
+      deletedCount,
+      scope: status || 'all',
+    });
+  } catch (error) {
+    console.error('Error deleting changesets:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete changesets' });
   }
 });
 

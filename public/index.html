@@ -899,7 +899,10 @@
         <div class="changesets-section" id="changesets-section">
             <div class="changesets-header">
                 <h2>Pending Changes</h2>
-                <button class="btn-create" onclick="showCreateChangesetModal()">+ New Changeset</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-reject" onclick="deleteAllChangesets()">Delete All</button>
+                    <button class="btn-create" onclick="showCreateChangesetModal()">+ New Changeset</button>
+                </div>
             </div>
             <div class="filters">
                 <button class="active" data-filter="all">All</button>
@@ -1211,8 +1214,13 @@
                         <div class="changeset-actions">
                             <button class="btn btn-reject" onclick="rejectChangeset('${cs.id}', event)">Reject All</button>
                             <button class="btn btn-approve" onclick="approveChangeset('${cs.id}', event)">Approve All</button>
+                            <button class="btn btn-reject" onclick="deleteChangeset('${cs.id}', event)">Delete</button>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="changeset-actions">
+                            <button class="btn btn-reject" onclick="deleteChangeset('${cs.id}', event)">Delete</button>
+                        </div>
+                    `}
                 </div>
             `).join('');
         }
@@ -1297,6 +1305,56 @@
                     throw new Error(data.error || 'Failed to reject changeset');
                 }
                 
+                loadChangesets();
+                loadStats();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteChangeset(changesetId, event) {
+            if (event) event.stopPropagation();
+
+            if (!confirm('Delete this changeset and all of its captured changes? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/changesets/${changesetId}`, {
+                    method: 'DELETE',
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to delete changeset');
+                }
+
+                loadChangesets();
+                loadStats();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteAllChangesets() {
+            const scope = currentFilter === 'all' ? 'all changesets' : `all ${currentFilter} changesets`;
+            if (!confirm(`Delete ${scope}? This cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const query = currentFilter === 'all' ? '' : `?status=${encodeURIComponent(currentFilter)}`;
+                const res = await fetch(`/api/changesets${query}`, {
+                    method: 'DELETE',
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to delete changesets');
+                }
+
                 loadChangesets();
                 loadStats();
             } catch (err) {

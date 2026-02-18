@@ -57,7 +57,7 @@ Propose changes to the system. These are NOT executed immediately - they are cap
 propose_change:
   endpoint: "/journals"
   method: "POST"
-  data: {
+  body: {
     "no": "J-2024-001",
     "effective_date": "2024-01-15",
     "description": "Office supplies purchase",
@@ -138,6 +138,7 @@ When proposing journal entries, use the simplified transaction format:
 ```
 
 The proxy automatically converts this to the API's `postings` format.
+If a journal payload has `description` but no `title`, the proxy also sets `title = description` before execution.
 
 ## Environment
 
