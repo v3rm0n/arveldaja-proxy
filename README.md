@@ -10,6 +10,18 @@ A safety layer proxy for Estonian e-Financials API that allows AI agents to free
 - **Audit Trail**: Complete history of all proposed and executed changes
 - **Secure**: HMAC-SHA-384 authentication compatible with e-Financials API
 
+## Screenshots
+
+### Main Dashboard
+Overview of company info, account balances, and all pending changes with their status.
+
+![Main Dashboard](screenshot.png)
+
+### Pending Changeset Review
+Detailed view of journal entries awaiting approval, showing account codes, names, and debit/credit amounts.
+
+![Pending Changeset](screenshot-changeset.png)
+
 ## Quick Start
 
 ### 1. Install dependencies
