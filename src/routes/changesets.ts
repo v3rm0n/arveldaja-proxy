@@ -5,7 +5,6 @@ import {
   getChangesets,
   getChangesetWithChanges,
   updateChangesetStatus,
-  getPendingChanges,
   updatePendingChangeStatus,
   deleteChangeset,
   moveChangesToChangeset,
@@ -229,35 +228,6 @@ router.delete('/changesets/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting changeset:', error);
     res.status(500).json({ success: false, error: 'Failed to delete changeset' });
-  }
-});
-
-// Get stats including changesets
-router.get('/stats', async (req, res) => {
-  try {
-    const pending = await getPendingChanges('pending');
-    const approved = await getPendingChanges('approved');
-    const rejected = await getPendingChanges('rejected');
-    const changesets = await getChangesets();
-    
-    res.json({
-      success: true,
-      stats: {
-        pending: pending.length,
-        approved: approved.length,
-        rejected: rejected.length,
-        total: pending.length + approved.length + rejected.length,
-        changesets: {
-          total: changesets.length,
-          pending: changesets.filter(c => c.status === 'pending').length,
-          approved: changesets.filter(c => c.status === 'approved').length,
-          rejected: changesets.filter(c => c.status === 'rejected').length,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching stats:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch stats' });
   }
 });
 

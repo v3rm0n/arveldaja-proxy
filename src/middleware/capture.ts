@@ -27,7 +27,7 @@ export function captureMiddleware(
   (req as any).changeId = changeId;
 
   // Get changeset ID from headers if provided
-  let changesetId = req.headers['x-changeset-id'] as string | undefined;
+  const changesetId = req.headers['x-changeset-id'] as string | undefined;
 
   // Use the already-parsed body from express.json()
   const body = req.body ? JSON.stringify(req.body) : null;

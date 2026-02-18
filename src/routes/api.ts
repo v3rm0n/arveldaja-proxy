@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { getPendingChanges, getPendingChangeById, updatePendingChangeStatus, deletePendingChange } from '../db';
-import { isWriteOperation } from '../middleware/capture';
 import { executeChange } from '../utils/executor';
 
 const router = Router();

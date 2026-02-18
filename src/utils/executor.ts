@@ -100,7 +100,7 @@ export async function forwardReadRequest(
   method: string,
   path: string,
   query: Record<string, string>,
-  headers: Record<string, string>
+  _headers: Record<string, string>
 ): Promise<any> {
   const credentials: ApiCredentials = {
     apiKeyId: process.env.API_KEY_ID || '',
@@ -113,18 +113,23 @@ export async function forwardReadRequest(
     throw new Error('API credentials not configured');
   }
   
-  // Build full URL - ensure base URL ends with / and path doesn't start with /
+  // Normalize path to avoid duplicating /v1 when callers pass /v1/* or /proxy/v1/*
+  const apiPath = path.replace(/^\/proxy/, '');
+  const normalizedPath = apiPath.startsWith('/v1/')
+    ? apiPath
+    : `/v1${apiPath.startsWith('/') ? apiPath : '/' + apiPath}`;
+
+  // Build full URL from normalized path (without leading /v1)
   const baseUrl = credentials.baseUrl.endsWith('/') ? credentials.baseUrl : credentials.baseUrl + '/';
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const pathWithoutV1 = normalizedPath.replace(/^\/v1\//, '');
+  const cleanPath = pathWithoutV1.startsWith('/') ? pathWithoutV1.slice(1) : pathWithoutV1;
   const url = new URL(cleanPath, baseUrl);
   Object.entries(query).forEach(([key, value]) => {
     if (value) url.searchParams.append(key, value);
   });
   
   const { signRequest } = await import('./auth');
-  // The path for signing must include /v1 prefix
-  const signPath = path.startsWith('/v1/') ? path : '/v1' + (path.startsWith('/') ? path : '/' + path);
-  const authHeaders = signRequest(method, signPath, credentials);
+  const authHeaders = signRequest(method, normalizedPath, credentials);
   
   const response = await fetch(url.toString(), {
     method,

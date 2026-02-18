@@ -10,8 +10,14 @@ export async function initDatabase(): Promise<void> {
         reject(err);
         return;
       }
-      
-      db!.exec(`
+
+      db!.run('PRAGMA foreign_keys = ON', (pragmaErr) => {
+        if (pragmaErr) {
+          reject(pragmaErr);
+          return;
+        }
+
+        db!.exec(`
         CREATE TABLE IF NOT EXISTS changesets (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
@@ -45,12 +51,13 @@ export async function initDatabase(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_changeset_id ON pending_changes(changeset_id);
         CREATE INDEX IF NOT EXISTS idx_changeset_status ON changesets(status);
       `, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log('Database initialized with changesets');
-          resolve();
-        }
+          if (err) {
+            reject(err);
+          } else {
+            console.log('Database initialized with changesets');
+            resolve();
+          }
+        });
       });
     });
   });
