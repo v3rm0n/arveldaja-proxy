@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { createPendingChange, createChangeset } from '../db';
 import { Changeset } from '../types';
 
@@ -21,7 +21,7 @@ export function captureMiddleware(
   }
 
   // Generate unique ID for this change
-  const changeId = uuidv4();
+  const changeId = randomUUID();
   
   // Store change ID on request for later use
   (req as any).changeId = changeId;
@@ -74,7 +74,7 @@ export function captureMiddleware(
   
   // If no changeset ID provided, auto-create a single-change changeset
   if (!changesetId) {
-    const autoChangesetId = uuidv4();
+    const autoChangesetId = randomUUID();
     const changeset: Changeset = {
       id: autoChangesetId,
       name: `Change ${new Date().toLocaleString()}`,

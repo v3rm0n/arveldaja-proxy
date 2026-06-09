@@ -8,6 +8,7 @@
  * Key principle: Agents can READ and PROPOSE, but cannot EXECUTE without approval.
  */
 
+import { randomUUID } from 'crypto';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -213,7 +214,6 @@ async function handleProposeChange(args: any) {
   // In reality, this would make the request to the proxy which captures it
   // But since we're the MCP server, we directly create the pending change
   
-  const { v4: uuidv4 } = await import('uuid');
   const { createPendingChange, createChangeset } = await import('./db/index.js');
   
   // Create a changeset for this change
@@ -222,7 +222,7 @@ async function handleProposeChange(args: any) {
     : `Proposed ${normalizedMethod} to ${endpoint}`;
   
   const changeset = {
-    id: uuidv4(),
+    id: randomUUID(),
     name: changesetName,
     description: description || `Proposed ${normalizedMethod} request to ${endpoint}`,
     status: 'pending' as const,
@@ -235,7 +235,7 @@ async function handleProposeChange(args: any) {
   
   // Create the pending change
   const change = {
-    id: uuidv4(),
+    id: randomUUID(),
     changesetId: changeset.id,
     method: normalizedMethod,
     path: endpoint.startsWith('/') ? endpoint : `/${endpoint}`,

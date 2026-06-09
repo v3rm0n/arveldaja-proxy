@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   createChangeset,
   getChangesets,
@@ -52,7 +52,7 @@ router.post('/changesets', async (req, res) => {
     }
     
     const changeset = {
-      id: uuidv4(),
+      id: randomUUID(),
       name: name.trim(),
       description: description?.trim(),
       status: 'pending' as const,
