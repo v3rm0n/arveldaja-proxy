@@ -78,8 +78,9 @@ app.use('/api', apiRoutes);
 app.use('/api', companyRoutes);
 app.use('/api', changesetRoutes);
 
-// Proxy endpoint - captures writes, forwards reads
-app.all('/proxy/*', captureMiddleware, async (req, res) => {
+// Proxy endpoint - captures writes, forwards reads.
+// Express 5 (path-to-regexp v8) requires named wildcards: '/proxy/*' -> '/proxy/*splat'.
+app.all('/proxy/*splat', captureMiddleware, async (req, res) => {
   // If it's a write operation, captureMiddleware already responded
   if (isWriteOperation(req.method)) {
     return;
@@ -109,8 +110,8 @@ app.all('/proxy/*', captureMiddleware, async (req, res) => {
   }
 });
 
-// Serve review UI
-app.get('/review/:id?', (req, res) => {
+// Serve review UI. Express 5 dropped the '?' optional modifier; use a brace group.
+app.get('/review{/:id}', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'public/index.html'));
 });
 
