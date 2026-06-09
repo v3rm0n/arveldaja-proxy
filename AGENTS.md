@@ -233,7 +233,7 @@ Would you like me to show you the details of any specific changeset?"
 
 ## Security Notes
 
-- API credentials are stored in environment variables, never expose them
+- API credentials live only in the project root `.env` file, read directly by the node processes. They must never appear in MCP client configuration (`env` blocks), agent-readable files, or your output
 - The database contains financial data - handle with care
 - All actions are logged for audit purposes
 - Never suggest disabling the approval system

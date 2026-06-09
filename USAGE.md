@@ -155,16 +155,13 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "arveldaja": {
       "command": "node",
-      "args": ["/full/path/to/arveldaja-proxy/dist/mcp-server.js"],
-      "env": {
-        "API_KEY_ID": "your_api_key_id",
-        "API_KEY_PUBLIC": "your_api_key_public",
-        "API_KEY_PASSWORD": "your_api_key_password"
-      }
+      "args": ["/full/path/to/arveldaja-proxy/dist/mcp-server.js"]
     }
   }
 }
 ```
+
+**Keep credentials out of this file.** The MCP server loads the API keys from the `.env` file in the project root, so only the node process sees them. Agent hosts can read their own configuration — an `env` block with secrets would expose the credentials to the agent.
 
 ### Working with AI Agents
 
@@ -382,8 +379,8 @@ curl http://localhost:3000/proxy/v1/accounts
 **Problem:** "Command not found" in Claude Desktop
 **Solution:** Use the full absolute path to `dist/mcp-server.js`
 
-**Problem:** "Environment variables not set"
-**Solution:** Add env vars to the MCP config in Claude Desktop settings
+**Problem:** "API credentials not configured"
+**Solution:** Create the `.env` file in the project root (see Configuration). The MCP server reads it directly — do not put credentials in the Claude Desktop config
 
 **Problem:** Agent proposals don't show up in the review UI
 **Solution:** The proxy server and MCP server must share one database. By default both resolve `pending_changes.db` relative to the project root, so this works out of the box; if you set `DB_PATH`, set it to the same absolute path for both processes.

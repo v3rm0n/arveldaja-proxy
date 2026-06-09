@@ -157,16 +157,13 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "arveldaja": {
       "command": "node",
-      "args": ["/full/path/to/arveldaja-proxy/dist/mcp-server.js"],
-      "env": {
-        "API_KEY_ID": "your_api_key_id",
-        "API_KEY_PUBLIC": "your_api_key_public",
-        "API_KEY_PASSWORD": "your_api_key_password"
-      }
+      "args": ["/full/path/to/arveldaja-proxy/dist/mcp-server.js"]
     }
   }
 }
 ```
+
+The server reads the API credentials from the `.env` file in the project root, so the MCP client config carries no secrets — agent hosts can read their own configuration, and an agent must never be able to see the credentials. Do not add the keys to an `env` block. (Real environment variables still take precedence over `.env` if you set them on the process some other way.)
 
 ### MCP Tools Available
 
@@ -283,7 +280,7 @@ src/
 
 ## Security
 
-- **API Credentials**: Stored in environment variables, never exposed
+- **API Credentials**: Loaded from the project root `.env` by the node processes themselves — never placed in MCP client configs or other agent-readable locations
 - **Approval Required**: All writes require explicit human approval
 - **Audit Trail**: Complete history stored in SQLite
 - **No Secrets Logged**: Credentials never appear in logs
