@@ -154,11 +154,13 @@ If a journal payload has `description` but no `title`, the proxy also sets `titl
 The project connects to the **demo environment** by default:
 - Base URL: `https://demo-rmp-api.rik.ee/v1` (override with `API_BASE_URL`)
 - Authentication: HMAC-SHA-384 signing (`API_KEY_ID`, `API_KEY_PUBLIC`, `API_KEY_PASSWORD`)
-- Database: SQLite (`pending_changes.db` in the project root by default, override with `DB_PATH`; shared by the proxy server and the MCP server, resolved relative to the code so the two processes always find the same file)
+- Database: SQLite (`pending_changes.db` in the project root by default, override with `DB_PATH`; resolved relative to the code so the Express server and the standalone stdio MCP server always find the same file)
+- MCP transport: the Express server exposes the MCP server at `POST /mcp` (Streamable HTTP, stateless) — the recommended setup, one process and one DB handle. `dist/mcp-server.js` remains as a standalone stdio entry for clients that need it.
 
 Optional hardening env vars (see `.env.example`):
 - `ALLOWED_ORIGINS` - CORS allowlist for browser clients (defaults to the local review UI)
-- `PROXY_AUTH_TOKEN` - when set, all mutating requests (proxy writes, approvals, rejections, deletes) must carry the token via `Authorization: Bearer <token>` or `X-Proxy-Token`
+- `MCP_ALLOWED_HOSTS` - `Host` headers accepted on `/mcp` (DNS rebinding protection; defaults to localhost variants)
+- `PROXY_AUTH_TOKEN` - when set, all mutating requests (proxy writes, approvals, rejections, deletes) must carry the token via `Authorization: Bearer <token>` or `X-Proxy-Token`. MCP-over-HTTP messages are all POSTs, so MCP clients must send the token too (it is a proxy access token, not an API credential, so it may appear in MCP client config)
 
 ## File Structure
 
@@ -167,15 +169,18 @@ public/
 └── index.html            # Review web UI (single page)
 src/
 ├── index.ts              # Main Express server (CORS, auth guard, proxy routes)
-├── mcp-server.ts         # MCP server for AI agents
+├── mcp-server.ts         # Standalone stdio entry for the MCP server
 ├── db/
 │   └── index.ts          # Database operations
+├── mcp/
+│   └── server.ts         # MCP server factory (tools and handlers)
 ├── middleware/
 │   └── capture.ts        # Request interception
 ├── routes/
 │   ├── api.ts            # Change management API
 │   ├── changesets.ts     # Changeset management API
-│   └── company.ts        # Company info and balance aggregation
+│   ├── company.ts        # Company info and balance aggregation
+│   └── mcp.ts            # MCP over Streamable HTTP (/mcp)
 ├── types/
 │   └── index.ts          # Shared TypeScript types
 └── utils/

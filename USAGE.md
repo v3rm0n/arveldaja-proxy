@@ -90,7 +90,7 @@ npm start
 
 ### Running the MCP Server
 
-For AI agent integration:
+The running proxy server already exposes the MCP server at `http://localhost:3000/mcp` — nothing extra to start. For MCP clients that only support stdio servers, a standalone process is available:
 
 ```bash
 npm run mcp
@@ -148,7 +148,22 @@ AI agents can interact with the system through the MCP server. Agents have:
 
 ### Configuring Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+With the proxy server running, point the client at the HTTP endpoint in `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "arveldaja": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+If you set `PROXY_AUTH_TOKEN`, add it as a header — all MCP messages are POSTs, so the write guard applies to them: `"headers": { "Authorization": "Bearer <your PROXY_AUTH_TOKEN>" }`. The proxy token is not an e-Financials credential; with it an agent can still only read and propose, never execute.
+
+Alternatively, for clients that only support stdio servers:
 
 ```json
 {
@@ -376,14 +391,20 @@ curl http://localhost:3000/proxy/v1/accounts
 
 ### MCP Server Issues
 
-**Problem:** "Command not found" in Claude Desktop
+**Problem:** MCP client cannot connect to `http://localhost:3000/mcp`
+**Solution:** The HTTP endpoint is part of the proxy server — make sure it is running (`npm run dev` or `npm start`). If `PROXY_AUTH_TOKEN` is set, the client must send it as a header on every request
+
+**Problem:** `/mcp` returns 403 "Invalid Host header"
+**Solution:** DNS rebinding protection only accepts `localhost`/`127.0.0.1` Hosts by default. If you reach the server under another hostname, list it in `MCP_ALLOWED_HOSTS`
+
+**Problem:** "Command not found" in Claude Desktop (stdio setup)
 **Solution:** Use the full absolute path to `dist/mcp-server.js`
 
 **Problem:** "API credentials not configured"
-**Solution:** Create the `.env` file in the project root (see Configuration). The MCP server reads it directly — do not put credentials in the Claude Desktop config
+**Solution:** Create the `.env` file in the project root (see Configuration). The server reads it directly — do not put credentials in the Claude Desktop config
 
 **Problem:** Agent proposals don't show up in the review UI
-**Solution:** The proxy server and MCP server must share one database. By default both resolve `pending_changes.db` relative to the project root, so this works out of the box; if you set `DB_PATH`, set it to the same absolute path for both processes.
+**Solution:** The proxy server and the standalone stdio MCP server must share one database (the HTTP endpoint shares it automatically). By default both resolve `pending_changes.db` relative to the project root, so this works out of the box; if you set `DB_PATH`, set it to the same absolute path for both processes.
 
 ## Security Best Practices
 

@@ -64,7 +64,8 @@ PORT=3000
 | `PORT` | No | Server port, defaults to `3000` |
 | `DB_PATH` | No | SQLite database path; defaults to `pending_changes.db` in the project root (shared by the proxy and MCP servers) |
 | `ALLOWED_ORIGINS` | No | Comma-separated CORS allowlist; defaults to `http://localhost:<PORT>` |
-| `PROXY_AUTH_TOKEN` | No | When set, all write operations (proxy writes, approvals, rejections, deletes) require this token via `Authorization: Bearer <token>` or `X-Proxy-Token` header. The review UI picks it up from `?token=<token>` in the URL. |
+| `MCP_ALLOWED_HOSTS` | No | Comma-separated `Host` headers accepted on `/mcp` (DNS rebinding protection); defaults to `localhost` and `127.0.0.1` with and without the port |
+| `PROXY_AUTH_TOKEN` | No | When set, all write operations (proxy writes, approvals, rejections, deletes) and all MCP-over-HTTP requests require this token via `Authorization: Bearer <token>` or `X-Proxy-Token` header. The review UI picks it up from `?token=<token>` in the URL. |
 
 ### 3. Run
 
@@ -76,6 +77,7 @@ The server will start on port 3000 (or PORT env var).
 
 **Access points:**
 - Web UI: http://localhost:3000/review
+- MCP endpoint: http://localhost:3000/mcp
 - Health check: http://localhost:3000/health
 - API connectivity test: http://localhost:3000/test-connection
 
@@ -148,9 +150,40 @@ See [AGENTS.md](AGENTS.md) for complete AI assistant guidelines.
 
 ## MCP Server Setup
 
-### Using with Claude Desktop
+### Over HTTP (recommended)
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+The running proxy server exposes the MCP server at `http://localhost:3000/mcp` (Streamable HTTP) — no separate process needed. Add to your MCP client config (e.g. `~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "arveldaja": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+If `PROXY_AUTH_TOKEN` is set, every MCP request needs it (MCP messages are all POSTs, so the write guard applies):
+
+```json
+{
+  "mcpServers": {
+    "arveldaja": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp",
+      "headers": { "Authorization": "Bearer <your PROXY_AUTH_TOKEN>" }
+    }
+  }
+}
+```
+
+The proxy token only gates access to the proxy itself — it is not an e-Financials API credential, so it is acceptable in the client config. Agents can only read data and propose changes with it; execution still requires human approval in the review UI.
+
+### Over stdio (alternative)
+
+For MCP clients that only support stdio servers, the standalone entry point still exists:
 
 ```json
 {
@@ -163,7 +196,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-The server reads the API credentials from the `.env` file in the project root, so the MCP client config carries no secrets — agent hosts can read their own configuration, and an agent must never be able to see the credentials. Do not add the keys to an `env` block. (Real environment variables still take precedence over `.env` if you set them on the process some other way.)
+In both setups the server reads the API credentials from the `.env` file in the project root, so the MCP client config carries no secrets — agent hosts can read their own configuration, and an agent must never be able to see the credentials. Do not add the keys to an `env` block. (Real environment variables still take precedence over `.env` if you set them on the process some other way.)
 
 ### MCP Tools Available
 
@@ -237,6 +270,10 @@ Aggregated views computed by the proxy from e-Financials data (used by the web U
 - For `/journals` writes, the proxy converts simplified `transactions` to API `postings`.
 - If a journal payload contains `description` but no `title`, the proxy automatically sets `title = description` so the journal description is visible in e-Financials.
 
+### MCP Endpoint
+
+- `POST /mcp` - MCP server over Streamable HTTP (stateless; see [MCP Server Setup](#mcp-server-setup))
+
 ### UI Routes
 
 - `GET /review` and `GET /review/:id` - Review interface
@@ -248,8 +285,8 @@ Aggregated views computed by the proxy from e-Financials data (used by the web U
 ```bash
 npm run build      # Compile TypeScript
 npm run dev        # Run with hot reload
-npm start          # Run production build
-npm run mcp        # Run MCP server
+npm start          # Run production build (includes the /mcp endpoint)
+npm run mcp        # Run standalone stdio MCP server
 npm run lint       # Run ESLint
 npm run typecheck  # Run TypeScript check
 ```
@@ -261,15 +298,18 @@ public/
 └── index.html            # Review web UI (single page)
 src/
 ├── index.ts              # Main Express server (CORS, auth guard, proxy routes)
-├── mcp-server.ts         # MCP server for AI agents
+├── mcp-server.ts         # Standalone stdio entry for the MCP server
 ├── db/
 │   └── index.ts          # SQLite database operations
+├── mcp/
+│   └── server.ts         # MCP server factory (tools and handlers)
 ├── middleware/
 │   └── capture.ts        # Request interception middleware
 ├── routes/
 │   ├── api.ts            # Change management API
 │   ├── changesets.ts     # Changeset management API
-│   └── company.ts        # Company info and balance aggregation
+│   ├── company.ts        # Company info and balance aggregation
+│   └── mcp.ts            # MCP over Streamable HTTP (/mcp)
 ├── types/
 │   └── index.ts          # Shared TypeScript types
 └── utils/
