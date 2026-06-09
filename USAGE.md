@@ -17,7 +17,7 @@ Complete guide for using the e-arveldaja proxy system.
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 22 LTS or newer (CI tests on 22 and 24)
 - npm or yarn
 - e-Financials API credentials
 
@@ -35,7 +35,11 @@ npm run build
 
 ## Configuration
 
-Create a `.env` file in the project root:
+Copy the example file and fill in your credentials:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 # e-Financials API Credentials
@@ -46,7 +50,16 @@ API_KEY_PASSWORD=your_api_key_password
 # API Configuration
 API_BASE_URL=https://demo-rmp-api.rik.ee/v1
 PORT=3000
+
+# Optional hardening (see below)
+# ALLOWED_ORIGINS=http://localhost:3000
+# PROXY_AUTH_TOKEN=change-me
 ```
+
+### Optional Security Settings
+
+- **`ALLOWED_ORIGINS`** - Comma-separated list of browser origins allowed by CORS. Defaults to `http://localhost:<PORT>` (the bundled review UI). Do not use a wildcard: it would let any website you visit issue cross-origin write/approval requests against the server.
+- **`PROXY_AUTH_TOKEN`** - Shared secret for write operations. When set, every mutating request (proxy writes, approvals, rejections, deletes) must present the token via an `Authorization: Bearer <token>` or `X-Proxy-Token` header. Reads stay open. The review UI picks the token up from `?token=<token>` in the URL and stores it in localStorage, so open `http://localhost:3000/review?token=<token>` once. Leave unset to disable the guard.
 
 ### Getting API Credentials
 
@@ -66,6 +79,7 @@ npm run dev
 This starts the server with hot reload. Access the web UI at:
 - Web Interface: http://localhost:3000/review
 - Health Check: http://localhost:3000/health
+- API Connectivity Test: http://localhost:3000/test-connection (verifies your credentials against e-Financials)
 
 ### Production Mode
 
@@ -124,12 +138,13 @@ AI agents can interact with the system through the MCP server. Agents have:
 - `query_api` - Query any e-Financials endpoint
 
 **Proposing Changes:**
-- `propose_change` - Submit changes for approval (captured, not executed)
+- `propose_change` - Submit changes for approval (captured, not executed); accepts a `changesetId` to group related changes
+- `create_changeset` - Create a changeset to group related proposals into one review
 
 **Checking Status:**
-- `list_pending_changes` - See awaiting changes
+- `list_pending_changes` - See proposed changes; filter by `status` to see execution results or rejection reasons
 - `list_changesets` - View all changesets
-- `get_changeset_details` - Review specific changeset
+- `get_changeset_details` - Review a changeset including each change's outcome
 
 ### Configuring Claude Desktop
 
@@ -208,12 +223,14 @@ curl -X PUT http://localhost:3000/proxy/v1/journals/123 \
 curl -X DELETE http://localhost:3000/proxy/v1/journals/123
 ```
 
+Each captured write gets an auto-created single-change changeset. To group several writes together, create a changeset first (see Management API) and pass its ID in an `X-Changeset-Id` header on each write.
+
 ### Management API
 
 These endpoints manage the pending changes queue:
 
 ```bash
-# List all changes
+# List all changes (optional ?status=pending|approved|rejected)
 curl http://localhost:3000/api/changes
 
 # Get specific change
@@ -225,11 +242,19 @@ curl -X POST http://localhost:3000/api/changes/:id/approve
 # Reject a change
 curl -X POST http://localhost:3000/api/changes/:id/reject
 
-# List changesets
+# Delete a change
+curl -X DELETE http://localhost:3000/api/changes/:id
+
+# List changesets (optional ?status=pending|approved|rejected)
 curl http://localhost:3000/api/changesets
 
 # Get changeset with changes
 curl http://localhost:3000/api/changesets/:id
+
+# Create a changeset
+curl -X POST http://localhost:3000/api/changesets \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My changeset", "description": "Optional description"}'
 
 # Approve all changes in a changeset
 curl -X POST http://localhost:3000/api/changesets/:id/approve
@@ -237,8 +262,39 @@ curl -X POST http://localhost:3000/api/changesets/:id/approve
 # Reject all changes in a changeset
 curl -X POST http://localhost:3000/api/changesets/:id/reject
 
+# Move existing changes into a changeset
+curl -X POST http://localhost:3000/api/changesets/:id/changes \
+  -H "Content-Type: application/json" \
+  -d '{"changeIds": ["change-uuid-1", "change-uuid-2"]}'
+
+# Delete one changeset and its captured changes
+curl -X DELETE http://localhost:3000/api/changesets/:id
+
+# Delete all changesets (optional ?status=pending|approved|rejected)
+curl -X DELETE http://localhost:3000/api/changesets
+
 # Get statistics
 curl http://localhost:3000/api/stats
+```
+
+If `PROXY_AUTH_TOKEN` is set, add `-H "Authorization: Bearer <token>"` to all POST/DELETE examples above.
+
+### Reporting API
+
+Aggregated views computed by the proxy from e-Financials data (used by the web UI):
+
+```bash
+# Company info (VAT registration, invoice settings, bank accounts)
+curl http://localhost:3000/api/company
+
+# Chart of accounts
+curl http://localhost:3000/api/accounts
+
+# Account balances for a period (optional &accounts=1020,5140 and &includeDimensions=true)
+curl "http://localhost:3000/api/account-balances?startDate=2024-01-01&endDate=2024-12-31"
+
+# Dimension usage statistics for an account
+curl "http://localhost:3000/api/account-dimensions?account=1750"
 ```
 
 ## Common Tasks
@@ -306,8 +362,14 @@ curl http://localhost:3000/proxy/v1/accounts
 
 ### Approval Failed
 
+**Problem:** "Unauthorized: a valid proxy auth token is required for write operations" (401)
+**Solution:** `PROXY_AUTH_TOKEN` is set on the server. Send the token via `Authorization: Bearer <token>` (or `X-Proxy-Token`), or open the review UI once with `?token=<token>` in the URL.
+
 **Problem:** "Change is already approved/rejected"
 **Solution:** The change was already processed. Check the status in the web UI.
+
+**Problem:** "Change is already being processed" (409)
+**Solution:** A concurrent approval of the same change/changeset is in flight. Wait for it to finish and re-check the status.
 
 **Problem:** API error when executing
 **Solution:** Check the error message in the web UI. Common issues:
@@ -323,16 +385,20 @@ curl http://localhost:3000/proxy/v1/accounts
 **Problem:** "Environment variables not set"
 **Solution:** Add env vars to the MCP config in Claude Desktop settings
 
+**Problem:** Agent proposals don't show up in the review UI
+**Solution:** The proxy server and MCP server must share one database. By default both resolve `pending_changes.db` relative to the project root, so this works out of the box; if you set `DB_PATH`, set it to the same absolute path for both processes.
+
 ## Security Best Practices
 
 1. **Keep credentials secure**: Never commit `.env` file
 2. **Review carefully**: Always review AI-proposed changes before approving
 3. **Regular backups**: Backup `pending_changes.db` regularly
-4. **Limit access**: Restrict who can access the web UI
-5. **Audit trail**: All actions are logged - review the logs periodically
+4. **Limit access**: Restrict who can access the web UI; set `PROXY_AUTH_TOKEN` so approvals and other writes require a shared secret
+5. **Lock down CORS**: Keep `ALLOWED_ORIGINS` limited to origins you control (the default only allows the local review UI)
+6. **Audit trail**: All actions are logged - review the logs periodically
 
 ## Getting Help
 
-- **GitHub Issues**: https://github.com/yourusername/arveldaja-proxy/issues
+- **GitHub Issues**: https://github.com/v3rm0n/arveldaja-proxy/issues
 - **Documentation**: See README.md and AGENTS.md
 - **e-Financials API Docs**: https://demo-rmp-api.rik.ee/docs

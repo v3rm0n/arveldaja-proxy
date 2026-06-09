@@ -33,31 +33,6 @@
         }
 
         .company-info h2 {
-            margin-bottom: 10px;
-            color: #1a365d;
-            font-size: 16px;
-        }
-
-        .company-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-        }
-
-        .company-field {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .company-field label {
-            font-size: 10px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 3px;
-        }
-
-        .company-info h2 {
             font-size: 20px;
             color: #1a365d;
             margin-bottom: 15px;
@@ -136,12 +111,6 @@
             max-height: 0;
         }
 
-        .bank-account-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
         .bank-account-item {
             background: #f7fafc;
             padding: 10px 12px;
@@ -173,65 +142,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .changesets-header h2 {
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .filters {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 10px;
-        }
-
-        .filters button {
-            padding: 5px 12px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .filters button:hover {
-            background: #f7fafc;
-        }
-
-        .filters button.active {
-            background: #1a365d;
-            color: white;
-            border-color: #1a365d;
-        }
-
-        .btn-create {
-            padding: 6px 12px;
-            background: #1a365d;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .btn-create:hover {
-            background: #2c5282;
-        }
-
-        .changesets-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 15px;
         }
 
         .changesets-header h2 {
             font-size: 18px;
+            font-weight: 600;
             color: #333;
         }
 
@@ -243,6 +159,8 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
         }
 
         .btn-create:hover {
@@ -258,31 +176,11 @@
         }
 
         .changeset-header {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .changeset-header:hover {
-            background: #f7fafc;
-        }
-
-        .changeset-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .changeset-meta {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .changeset-header {
             padding: 15px 20px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
             cursor: pointer;
+            transition: background 0.2s;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -296,6 +194,7 @@
             font-weight: 600;
             font-size: 16px;
             color: #333;
+            margin-bottom: 2px;
         }
 
         .changeset-meta {
@@ -342,26 +241,6 @@
 
         .stat-card {
             background: white;
-            padding: 10px 15px;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .stat-card h3 {
-            font-size: 11px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .stat-card .number {
-            font-size: 22px;
-            font-weight: 700;
-        }
-
-        .stat-card {
-            background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -372,6 +251,7 @@
             color: #666;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 5px;
         }
 
         .stat-card .number {
@@ -430,26 +310,13 @@
         }
 
         .change-header {
-            padding: 8px 12px;
-            background: #f7fafc;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-        }
-
-        .change-body {
-            padding: 10px;
-        }
-
-        .change-header {
             padding: 15px 20px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 12px;
         }
 
         .change-header .left {
@@ -656,19 +523,6 @@
             border-top: 1px solid #e2e8f0;
             font-weight: 600;
             font-size: 12px;
-        }
-
-        .amount {
-            font-family: 'Monaco', monospace;
-            text-align: right;
-        }
-
-        .amount.debit {
-            color: #38a169;
-        }
-
-        .amount.credit {
-            color: #e53e3e;
         }
 
         .loading {
@@ -1082,6 +936,28 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>New Changeset</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="changeset-name">Name</label>
+                    <input type="text" id="changeset-name" placeholder="e.g. Month-end Closing Jan 2026" />
+                </div>
+                <div class="form-group">
+                    <label for="changeset-description">Description (optional)</label>
+                    <textarea id="changeset-description" rows="3" placeholder="What do the grouped changes accomplish?"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeCreateModal()">Cancel</button>
+                <button class="btn btn-approve" onclick="submitCreateChangeset()">Create</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // If the server is configured with PROXY_AUTH_TOKEN, write/approval requests
         // require the token. Store it once (?token=... in the URL, or set
@@ -1111,6 +987,9 @@
         let currentFilter = 'all';
         let pendingAction = null;
         let accountsCache = null;
+        // Changeset IDs the reviewer has expanded, so the periodic re-render
+        // doesn't collapse what they are reading.
+        const expandedChangesets = new Set();
 
         // Get account name from cache
         function getAccountName(accountCode) {
@@ -1151,54 +1030,54 @@
                         detailsHtml += `
                             <div class="company-field">
                                 <label>Address</label>
-                                <span>${company.address}</span>
+                                <span>${escapeHtml(company.address)}</span>
                             </div>
                         `;
                     }
-                    
+
                     if (company.email) {
                         detailsHtml += `
                             <div class="company-field">
                                 <label>Email</label>
-                                <span>${company.email}</span>
+                                <span>${escapeHtml(company.email)}</span>
                             </div>
                         `;
                     }
-                    
+
                     if (company.phone) {
                         detailsHtml += `
                             <div class="company-field">
                                 <label>Phone</label>
-                                <span>${company.phone}</span>
+                                <span>${escapeHtml(company.phone)}</span>
                             </div>
                         `;
                     }
-                    
+
                     if (company.website) {
                         detailsHtml += `
                             <div class="company-field">
                                 <label>Website</label>
-                                <span>${company.website}</span>
+                                <span>${escapeHtml(company.website)}</span>
                             </div>
                         `;
                     }
-                    
+
                     if (company.vatNumber) {
                         detailsHtml += `
                             <div class="company-field">
                                 <label>VAT Number</label>
-                                <span>${company.vatNumber}</span>
+                                <span>${escapeHtml(company.vatNumber)}</span>
                             </div>
                         `;
                     }
-                    
+
                     if (company.bankAccounts && company.bankAccounts.length > 0) {
                         const bankList = company.bankAccounts.map(ba => {
                             const bankName = ba.account_name_est || ba.account_name_eng || 'Unknown Bank';
                             return `
                                 <div class="bank-account-item">
-                                    <span class="bank-name">${bankName}</span>
-                                    <span class="account-no">${ba.iban_code || ba.account_no}</span>
+                                    <span class="bank-name">${escapeHtml(bankName)}</span>
+                                    <span class="account-no">${escapeHtml(ba.iban_code || ba.account_no)}</span>
                                 </div>
                             `;
                         }).join('');
@@ -1401,11 +1280,10 @@
                     const hasDimensions = acc.dimensions && acc.dimensions.length > 0;
                     
                     // Main account row
-                    const hasMultipleDimensions = acc.dimensions && acc.dimensions.length > 1;
                     rowsHtml += `
                         <tr class="account-row">
                             <td class="account-code">
-                                ${hasMultipleDimensions ? `<button class="expand-btn" data-account="${escapeAttr(code)}" onclick="toggleDimensions(this)" style="background: none; border: none; cursor: pointer; padding: 0 5px; font-size: 10px;">▶</button>` : '<span style="padding: 0 5px;">&nbsp;</span>'}
+                                ${hasDimensions ? `<button class="expand-btn" data-account="${escapeAttr(code)}" onclick="toggleDimensions(this)" style="background: none; border: none; cursor: pointer; padding: 0 5px; font-size: 10px;">▶</button>` : '<span style="padding: 0 5px;">&nbsp;</span>'}
                                 ${escapeHtml(code)}
                             </td>
                             <td><strong>${escapeHtml(name)}</strong></td>
@@ -1515,12 +1393,12 @@
             container.classList.remove('hidden');
             
             container.innerHTML = changesets.map(cs => `
-                <div class="changeset-card" data-id="${cs.id}">
+                <div class="changeset-card" data-id="${escapeAttr(cs.id)}">
                     <div class="changeset-header" onclick="toggleChangeset(this)">
                         <div>
                             <div class="changeset-title">${escapeHtml(cs.name)}</div>
                             <div class="changeset-meta">
-                                ${cs.description ? escapeHtml(cs.description) : ''} 
+                                ${cs.description ? escapeHtml(cs.description) : ''}
                                 ${cs.description ? '•' : ''}
                                 <span class="status-badge ${cs.status}">${cs.status}</span>
                                 • ${cs.changesCount || 0} change${cs.changesCount !== 1 ? 's' : ''}
@@ -1528,22 +1406,53 @@
                             </div>
                         </div>
                     </div>
-                    <div class="changeset-changes" id="changeset-changes-${cs.id}" style="display: none;">
+                    <div class="changeset-changes" id="changeset-changes-${escapeAttr(cs.id)}" style="display: none;">
                         <div class="loading">Loading changes...</div>
                     </div>
                     ${cs.status === 'pending' ? `
                         <div class="changeset-actions">
-                            <button class="btn btn-reject" onclick="rejectChangeset('${cs.id}', event)">Reject All</button>
-                            <button class="btn btn-approve" onclick="approveChangeset('${cs.id}', event)">Approve All</button>
-                            <button class="btn btn-reject" onclick="deleteChangeset('${cs.id}', event)">Delete</button>
+                            <button class="btn btn-reject" onclick="rejectChangeset('${escapeAttr(cs.id)}', event)">Reject All</button>
+                            <button class="btn btn-approve" onclick="approveChangeset('${escapeAttr(cs.id)}', event)">Approve All</button>
+                            <button class="btn btn-reject" onclick="deleteChangeset('${escapeAttr(cs.id)}', event)">Delete</button>
                         </div>
                     ` : `
                         <div class="changeset-actions">
-                            <button class="btn btn-reject" onclick="deleteChangeset('${cs.id}', event)">Delete</button>
+                            <button class="btn btn-reject" onclick="deleteChangeset('${escapeAttr(cs.id)}', event)">Delete</button>
                         </div>
                     `}
                 </div>
             `).join('');
+
+            // Restore expansion state lost by the re-render (filter switches,
+            // post-action reloads, the 30-second auto-refresh).
+            const visibleIds = new Set(changesets.map(cs => cs.id));
+            for (const id of [...expandedChangesets]) {
+                if (!visibleIds.has(id)) {
+                    expandedChangesets.delete(id);
+                    continue;
+                }
+                const changesDiv = document.getElementById(`changeset-changes-${id}`);
+                if (changesDiv) {
+                    changesDiv.style.display = 'block';
+                    loadChangesetChanges(id, changesDiv);
+                }
+            }
+        }
+
+        // Load the changes of a changeset into its container
+        async function loadChangesetChanges(changesetId, changesDiv) {
+            try {
+                const res = await fetch(`/api/changesets/${encodeURIComponent(changesetId)}`);
+                const data = await res.json();
+
+                if (data.success && data.changes.length > 0) {
+                    changesDiv.innerHTML = data.changes.map(change => renderChangeCard(change)).join('');
+                } else {
+                    changesDiv.innerHTML = '<p style="color: #666; padding: 10px;">No changes in this changeset.</p>';
+                }
+            } catch (err) {
+                changesDiv.innerHTML = '<p style="color: #e53e3e; padding: 10px;">Failed to load changes.</p>';
+            }
         }
 
         // Toggle changeset visibility
@@ -1551,24 +1460,14 @@
             const card = header.closest('.changeset-card');
             const changesDiv = card.querySelector('.changeset-changes');
             const changesetId = card.dataset.id;
-            
+
             if (changesDiv.style.display === 'none') {
                 changesDiv.style.display = 'block';
-                // Load changes for this changeset
-                try {
-                    const res = await fetch(`/api/changesets/${changesetId}`);
-                    const data = await res.json();
-                    
-                    if (data.success && data.changes.length > 0) {
-                        changesDiv.innerHTML = data.changes.map(change => renderChangeCard(change)).join('');
-                    } else {
-                        changesDiv.innerHTML = '<p style="color: #666; padding: 10px;">No changes in this changeset.</p>';
-                    }
-                } catch (err) {
-                    changesDiv.innerHTML = '<p style="color: #e53e3e; padding: 10px;">Failed to load changes.</p>';
-                }
+                expandedChangesets.add(changesetId);
+                await loadChangesetChanges(changesetId, changesDiv);
             } else {
                 changesDiv.style.display = 'none';
+                expandedChangesets.delete(changesetId);
             }
         }
 
@@ -1594,56 +1493,17 @@
         }
 
         // Approve entire changeset
-        async function approveChangeset(changesetId, event) {
+        function approveChangeset(changesetId, event) {
             event.stopPropagation();
-            
-            if (!confirm('Approve all changes in this changeset?')) return;
-            
-            try {
-                const res = await fetch(`/api/changesets/${changesetId}/approve`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}),
-                });
-                
-                const data = await res.json();
-                
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to approve changeset');
-                }
-                
-                loadChangesets();
-                loadStats();
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
+            openActionModal({ id: changesetId, kind: 'changeset', action: 'approve' },
+                'Approve all changes in this changeset?', 'Approve All');
         }
 
         // Reject entire changeset
-        async function rejectChangeset(changesetId, event) {
+        function rejectChangeset(changesetId, event) {
             event.stopPropagation();
-            
-            const reason = prompt('Enter reason for rejection (optional):');
-            if (reason === null) return; // Cancelled
-            
-            try {
-                const res = await fetch(`/api/changesets/${changesetId}/reject`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reason }),
-                });
-                
-                const data = await res.json();
-                
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to reject changeset');
-                }
-                
-                loadChangesets();
-                loadStats();
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
+            openActionModal({ id: changesetId, kind: 'changeset', action: 'reject' },
+                'Reject all changes in this changeset?', 'Reject All');
         }
 
         async function deleteChangeset(changesetId, event) {
@@ -1672,8 +1532,11 @@
         }
 
         async function deleteAllChangesets() {
-            const scope = currentFilter === 'all' ? 'all changesets' : `all ${currentFilter} changesets`;
-            if (!confirm(`Delete ${scope}? This cannot be undone.`)) {
+            const count = document.querySelectorAll('#changesets-list .changeset-card').length;
+            const scope = currentFilter === 'all'
+                ? `all ${count} changeset${count === 1 ? '' : 's'}`
+                : `all ${count} ${currentFilter} changeset${count === 1 ? '' : 's'}`;
+            if (!confirm(`Delete ${scope} and their captured changes? This permanently removes the review history and cannot be undone.`)) {
                 return;
             }
 
@@ -1758,12 +1621,12 @@
                         API Request Preview
                     </div>
                     <div style="margin-bottom: 8px; font-family: monospace; font-size: 13px;">
-                        <span style="color: #38a169; font-weight: 600;">${change.method}</span>
-                        <span style="color: #4a5568;">${apiPath}</span>
+                        <span style="color: #38a169; font-weight: 600;">${escapeHtml(change.method)}</span>
+                        <span style="color: #4a5568;">${escapeHtml(apiPath)}</span>
                     </div>
                     <details style="margin-top: 10px;">
                         <summary style="cursor: pointer; color: #2b6cb0; font-size: 13px;">View request body</summary>
-                        <pre style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 300px;">${JSON.stringify(transformedBody, null, 2)}</pre>
+                        <pre style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 300px;">${escapeHtml(JSON.stringify(transformedBody, null, 2))}</pre>
                     </details>
                 </div>
             `;
@@ -1805,13 +1668,13 @@
             
             // Extract key info from response
             if (response.id) {
-                summary += `<div style="margin-bottom: 8px;"><strong>Created ID:</strong> ${response.id}</div>`;
+                summary += `<div style="margin-bottom: 8px;"><strong>Created ID:</strong> ${escapeHtml(response.id)}</div>`;
             }
             if (response.no) {
-                summary += `<div style="margin-bottom: 8px;"><strong>Journal No:</strong> ${response.no}</div>`;
+                summary += `<div style="margin-bottom: 8px;"><strong>Journal No:</strong> ${escapeHtml(response.no)}</div>`;
             }
             if (response.status) {
-                summary += `<div style="margin-bottom: 8px;"><strong>Status:</strong> ${response.status}</div>`;
+                summary += `<div style="margin-bottom: 8px;"><strong>Status:</strong> ${escapeHtml(response.status)}</div>`;
             }
             
             return `
@@ -1822,7 +1685,7 @@
                     ${summary}
                     <details style="margin-top: 10px;">
                         <summary style="cursor: pointer; color: #2f855a; font-size: 13px;">View full response</summary>
-                        <pre style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 300px;">${JSON.stringify(response, null, 2)}</pre>
+                        <pre style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 300px;">${escapeHtml(JSON.stringify(response, null, 2))}</pre>
                     </details>
                 </div>
             `;
@@ -1856,16 +1719,16 @@
                     rows.push(`
                         <tr>
                             <td class="account-cell">
-                                ${line.debit_account}
-                                ${debitName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${debitName}</span>` : ''}
+                                ${escapeHtml(line.debit_account)}
+                                ${debitName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${escapeHtml(debitName)}</span>` : ''}
                             </td>
-                            <td>${line.description || ''}</td>
+                            <td>${escapeHtml(line.description || '')}</td>
                             <td class="amount debit">${formatAmount(line.amount)}</td>
                             <td class="amount"></td>
                         </tr>
                     `);
                 }
-                
+
                 // Credit side
                 if (line.credit_account) {
                     totalCredit += amount;
@@ -1873,10 +1736,10 @@
                     rows.push(`
                         <tr>
                             <td class="account-cell">
-                                ${line.credit_account}
-                                ${creditName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${creditName}</span>` : ''}
+                                ${escapeHtml(line.credit_account)}
+                                ${creditName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${escapeHtml(creditName)}</span>` : ''}
                             </td>
-                            <td>${line.description || ''}</td>
+                            <td>${escapeHtml(line.description || '')}</td>
                             <td class="amount"></td>
                             <td class="amount credit">${formatAmount(line.amount)}</td>
                         </tr>
@@ -1890,10 +1753,10 @@
                 <div class="journal-entry">
                     <div class="journal-header">
                         <div>
-                            <div class="journal-title">Journal Entry: ${data.no || 'New'}</div>
-                            <div>${data.description || ''}</div>
+                            <div class="journal-title">Journal Entry: ${escapeHtml(data.no || 'New')}</div>
+                            <div>${escapeHtml(data.description || '')}</div>
                         </div>
-                        <div class="journal-date">${data.effective_date || ''}</div>
+                        <div class="journal-date">${escapeHtml(data.effective_date || '')}</div>
                     </div>
                     <table class="journal-lines">
                         <thead>
@@ -1919,12 +1782,14 @@
             `;
         }
 
-        // Render JSON content
+        // Render JSON content. JSON.stringify does not escape '<', so the
+        // result must be HTML-escaped — string values inside the payload are
+        // agent-controlled and could otherwise inject markup.
         function renderJsonContent(data) {
             if (!data) return '';
             return `
                 <div class="change-content">
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>
                 </div>
             `;
         }
@@ -1965,52 +1830,54 @@
             document.getElementById('error').classList.add('hidden');
         }
 
-        // Actions
-        function approveChange(id) {
-            pendingAction = { id, action: 'approve' };
-            document.getElementById('modal-title').textContent = 'Approve Change';
-            document.getElementById('modalConfirm').textContent = 'Approve';
-            document.getElementById('modalConfirm').className = 'btn btn-approve';
-            document.getElementById('reasonGroup').classList.add('hidden');
+        // Actions: kind is 'change' or 'changeset'. The reason field is shown
+        // for rejections only and always starts empty so a previous rejection's
+        // reason can't ride along.
+        function openActionModal(action, title, confirmLabel) {
+            pendingAction = action;
+            const isReject = action.action === 'reject';
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modalConfirm').textContent = confirmLabel;
+            document.getElementById('modalConfirm').className = isReject ? 'btn btn-reject' : 'btn btn-approve';
+            document.getElementById('reason').value = '';
+            document.getElementById('reasonGroup').classList.toggle('hidden', !isReject);
             document.getElementById('modal').classList.add('active');
         }
 
+        function approveChange(id) {
+            openActionModal({ id, kind: 'change', action: 'approve' }, 'Approve Change', 'Approve');
+        }
+
         function rejectChange(id) {
-            pendingAction = { id, action: 'reject' };
-            document.getElementById('modal-title').textContent = 'Reject Change';
-            document.getElementById('modalConfirm').textContent = 'Reject';
-            document.getElementById('modalConfirm').className = 'btn btn-reject';
-            document.getElementById('reasonGroup').classList.remove('hidden');
-            document.getElementById('modal').classList.add('active');
+            openActionModal({ id, kind: 'change', action: 'reject' }, 'Reject Change', 'Reject');
         }
 
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
+            document.getElementById('reason').value = '';
             pendingAction = null;
         }
 
         async function confirmAction() {
             if (!pendingAction) return;
-            
+
             const reason = document.getElementById('reason').value;
-            
-            const endpoint = pendingAction.action === 'approve' 
-                ? `/api/changes/${pendingAction.id}/approve`
-                : `/api/changes/${pendingAction.id}/reject`;
-            
+            const base = pendingAction.kind === 'changeset' ? '/api/changesets' : '/api/changes';
+            const endpoint = `${base}/${encodeURIComponent(pendingAction.id)}/${pendingAction.action}`;
+
             try {
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reason }),
                 });
-                
+
                 const data = await res.json();
-                
+
                 if (!data.success) {
                     throw new Error(data.error || 'Action failed');
                 }
-                
+
                 closeModal();
                 loadChangesets();
             } catch (err) {
@@ -2020,12 +1887,25 @@
 
         // Show create changeset modal
         function showCreateChangesetModal() {
-            const name = prompt('Enter changeset name:');
-            if (!name || !name.trim()) return;
-            
-            const description = prompt('Enter description (optional):');
-            
-            createChangeset(name.trim(), description?.trim());
+            document.getElementById('changeset-name').value = '';
+            document.getElementById('changeset-description').value = '';
+            document.getElementById('createModal').classList.add('active');
+            document.getElementById('changeset-name').focus();
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('active');
+        }
+
+        function submitCreateChangeset() {
+            const name = document.getElementById('changeset-name').value.trim();
+            if (!name) {
+                alert('Changeset name is required');
+                return;
+            }
+            const description = document.getElementById('changeset-description').value.trim();
+            closeCreateModal();
+            createChangeset(name, description || undefined);
         }
 
         // Create a new changeset

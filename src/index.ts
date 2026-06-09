@@ -71,7 +71,12 @@ app.use((req, res, next) => {
   });
 });
 
-app.use(express.static('public'));
+// Static assets and the review UI live in <root>/public. Resolve relative to
+// the code (src/ and dist/ are both one level below the root), not the cwd,
+// so the server works no matter where it is launched from.
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+
+app.use(express.static(PUBLIC_DIR));
 
 // API Routes
 app.use('/api', apiRoutes);
@@ -111,8 +116,11 @@ app.all('/proxy/*splat', captureMiddleware, async (req, res) => {
 });
 
 // Serve review UI. Express 5 dropped the '?' optional modifier; use a brace group.
+// Pass the file relative to a root option: sendFile's dotfile check then only
+// applies to 'index.html', not to every segment of the absolute path (a
+// project under a dot-directory would otherwise 404).
 app.get('/review{/:id}', (req, res) => {
-  res.sendFile(path.join(process.cwd(), 'public/index.html'));
+  res.sendFile('index.html', { root: PUBLIC_DIR });
 });
 
 // Health check
