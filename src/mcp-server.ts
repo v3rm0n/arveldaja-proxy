@@ -8,6 +8,7 @@
  * Key principle: Agents can READ and PROPOSE, but cannot EXECUTE without approval.
  */
 
+import './utils/env.js';
 import { randomUUID } from 'crypto';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
