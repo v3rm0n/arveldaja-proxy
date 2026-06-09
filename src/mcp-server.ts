@@ -15,8 +15,30 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { initDatabase, getPendingChanges, getChangesets, getChangesetWithChanges } from './db/index.js';
+import {
+  initDatabase,
+  getPendingChanges,
+  getChangesets,
+  getChangesetById,
+  getChangesetWithChanges,
+  createPendingChange,
+  createChangeset,
+} from './db/index.js';
 import { forwardReadRequest } from './utils/executor.js';
+
+// Where the human reviews proposals; must match the Express server's port.
+const REVIEW_URL = `http://localhost:${process.env.PORT || 3000}/review`;
+
+// Stored response/error payloads are JSON strings; parse for the agent but
+// fall back to the raw string if a value isn't valid JSON.
+function tryParseJson(value: string | null): unknown {
+  if (value === null) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
 
 // Server configuration
 const server = new Server(
@@ -55,7 +77,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'propose_change',
-        description: 'Propose a change to the e-Financials API (create journal, update transaction, etc.). The change will be captured and queued for human approval - it will NOT be executed immediately. Returns a changeset ID for tracking.',
+        description: 'Propose a change to the e-Financials API (create journal, update transaction, etc.). The change will be captured and queued for human approval - it will NOT be executed immediately. Returns a changeset ID for tracking. To group several related changes for a single review, first call create_changeset and pass its ID as changesetId on each proposal.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -80,19 +102,46 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'string',
               description: 'Human-readable description of what this change does (for the review UI)',
             },
+            changesetId: {
+              type: 'string',
+              description: 'Optional: ID of an existing pending changeset (from create_changeset) to add this change to. Omit to auto-create a single-change changeset.',
+            },
           },
           required: ['endpoint', 'method'],
         },
       },
       {
+        name: 'create_changeset',
+        description: 'Create an empty changeset to group related changes (e.g. all journal entries of a month-end closing) so the human can review and approve them together. Pass the returned ID as changesetId to propose_change.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Short name for the changeset (shown in the review UI)',
+            },
+            description: {
+              type: 'string',
+              description: 'Optional longer description of what the grouped changes accomplish',
+            },
+          },
+          required: ['name'],
+        },
+      },
+      {
         name: 'list_pending_changes',
-        description: 'List all pending changes that are awaiting human approval. Use this to check the status of proposed changes.',
+        description: 'List proposed changes and their review status. Defaults to changes awaiting human approval; pass status "approved" or "rejected" to see resolved changes including their execution result or rejection reason.',
         inputSchema: {
           type: 'object',
           properties: {
             changesetId: {
               type: 'string',
               description: 'Optional: filter by changeset ID',
+            },
+            status: {
+              type: 'string',
+              enum: ['pending', 'approved', 'rejected'],
+              description: 'Optional: filter by status (default "pending")',
             },
           },
         },
@@ -140,7 +189,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       
       case 'propose_change':
         return await handleProposeChange(args);
-      
+
+      case 'create_changeset':
+        return await handleCreateChangeset(args);
+
       case 'list_pending_changes':
         return await handleListPendingChanges(args);
       
@@ -209,34 +261,45 @@ async function handleProposeChange(args: any) {
   if (bodyRequiredMethods.includes(normalizedMethod) && bodyPayload === null) {
     throw new Error('body is required for POST, PUT, and PATCH methods');
   }
-  
+
   // This simulates what the proxy does - capture the change
   // In reality, this would make the request to the proxy which captures it
   // But since we're the MCP server, we directly create the pending change
-  
-  const { createPendingChange, createChangeset } = await import('./db/index.js');
-  
-  // Create a changeset for this change
-  const changesetName = description 
-    ? `Proposed: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
-    : `Proposed ${normalizedMethod} to ${endpoint}`;
-  
-  const changeset = {
-    id: randomUUID(),
-    name: changesetName,
-    description: description || `Proposed ${normalizedMethod} request to ${endpoint}`,
-    status: 'pending' as const,
-    createdAt: new Date().toISOString(),
-    resolvedAt: null,
-    resolvedBy: null,
-  };
-  
-  await createChangeset(changeset);
-  
+
+  // Attach to an existing changeset when requested, otherwise auto-create one
+  let changesetId: string;
+  if (args?.changesetId) {
+    const existing = await getChangesetById(String(args.changesetId));
+    if (!existing) {
+      throw new Error(`Changeset not found: ${args.changesetId}`);
+    }
+    if (existing.status !== 'pending') {
+      throw new Error(`Cannot add changes to a ${existing.status} changeset`);
+    }
+    changesetId = existing.id;
+  } else {
+    const changesetName = description
+      ? `Proposed: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
+      : `Proposed ${normalizedMethod} to ${endpoint}`;
+
+    const changeset = {
+      id: randomUUID(),
+      name: changesetName,
+      description: description || `Proposed ${normalizedMethod} request to ${endpoint}`,
+      status: 'pending' as const,
+      createdAt: new Date().toISOString(),
+      resolvedAt: null,
+      resolvedBy: null,
+    };
+
+    await createChangeset(changeset);
+    changesetId = changeset.id;
+  }
+
   // Create the pending change
   const change = {
     id: randomUUID(),
-    changesetId: changeset.id,
+    changesetId,
     method: normalizedMethod,
     path: endpoint.startsWith('/') ? endpoint : `/${endpoint}`,
     originalUrl: endpoint,
@@ -260,13 +323,47 @@ async function handleProposeChange(args: any) {
         text: JSON.stringify({
           message: 'Change proposed and captured for human approval',
           status: 'pending',
-          changesetId: changeset.id,
+          changesetId,
           changeId: change.id,
           endpoint: change.path,
           method: change.method,
           body: bodyPayload,
           description: description || 'No description provided',
-          note: 'This change is NOT executed yet. A human must review and approve it via the web UI at http://localhost:3000/review',
+          note: `This change is NOT executed yet. A human must review and approve it via the web UI at ${REVIEW_URL}`,
+        }, null, 2),
+      },
+    ],
+  };
+}
+
+async function handleCreateChangeset(args: any) {
+  const name = typeof args?.name === 'string' ? args.name.trim() : '';
+  if (!name) {
+    throw new Error('name is required');
+  }
+
+  const changeset = {
+    id: randomUUID(),
+    name,
+    description: typeof args?.description === 'string' ? args.description.trim() : undefined,
+    status: 'pending' as const,
+    createdAt: new Date().toISOString(),
+    resolvedAt: null,
+    resolvedBy: null,
+  };
+
+  await createChangeset(changeset);
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          message: 'Changeset created',
+          changesetId: changeset.id,
+          name: changeset.name,
+          status: 'pending',
+          note: `Pass this changesetId to propose_change to group changes under this changeset. The human reviews it at ${REVIEW_URL}`,
         }, null, 2),
       },
     ],
@@ -274,19 +371,22 @@ async function handleProposeChange(args: any) {
 }
 
 async function handleListPendingChanges(args: any) {
-  const changes = await getPendingChanges('pending', args?.changesetId);
-  
+  const status: 'pending' | 'approved' | 'rejected' = args?.status || 'pending';
+  const changes = await getPendingChanges(status, args?.changesetId);
+
   if (changes.length === 0) {
     return {
       content: [
         {
           type: 'text',
-          text: 'No pending changes found. All proposed changes have been reviewed.',
+          text: status === 'pending'
+            ? 'No pending changes found. All proposed changes have been reviewed.'
+            : `No ${status} changes found.`,
         },
       ],
     };
   }
-  
+
   return {
     content: [
       {
@@ -296,9 +396,15 @@ async function handleListPendingChanges(args: any) {
             id: c.id,
             method: c.method,
             path: c.path,
+            status: c.status,
             changesetId: c.changesetId,
             createdAt: c.createdAt,
             body: c.body ? JSON.parse(c.body) : null,
+            // Outcome of the human review: execution result for approved
+            // changes, rejection reason / execution error for rejected ones.
+            resolvedAt: c.resolvedAt,
+            response: tryParseJson(c.response),
+            error: c.error,
           })),
           null,
           2
@@ -379,6 +485,10 @@ async function handleGetChangesetDetails(args: any) {
             status: c.status,
             createdAt: c.createdAt,
             body: c.body ? JSON.parse(c.body) : null,
+            resolvedAt: c.resolvedAt,
+            resolvedBy: c.resolvedBy,
+            response: tryParseJson(c.response),
+            error: c.error,
           })),
         }, null, 2),
       },

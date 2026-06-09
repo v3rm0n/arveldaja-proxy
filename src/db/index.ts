@@ -1,17 +1,33 @@
 import sqlite3 from 'sqlite3';
+import path from 'path';
 import { PendingChange, Changeset } from '../types';
+
+// The Express server and the MCP server are separate processes that must share
+// this database. Resolve the path relative to the package root (not the cwd):
+// MCP clients like Claude Desktop launch servers with an arbitrary cwd, and a
+// cwd-relative path would silently split the data into two databases —
+// proposals captured by the MCP server would never appear in the review UI.
+// Both src/db (tsx) and dist/db (compiled) are two levels below the root.
+const DB_PATH = process.env.DB_PATH || path.resolve(__dirname, '..', '..', 'pending_changes.db');
 
 let db: sqlite3.Database | null = null;
 
 export async function initDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
-    db = new sqlite3.Database('./pending_changes.db', (err) => {
+    db = new sqlite3.Database(DB_PATH, (err) => {
       if (err) {
         reject(err);
         return;
       }
 
-      db!.run('PRAGMA foreign_keys = ON', (pragmaErr) => {
+      // WAL allows the two processes to read/write concurrently, and
+      // busy_timeout makes a writer wait out a held lock instead of failing
+      // immediately with SQLITE_BUSY ("database is locked").
+      db!.exec(
+        `PRAGMA journal_mode = WAL;
+         PRAGMA busy_timeout = 5000;
+         PRAGMA foreign_keys = ON;`,
+        (pragmaErr) => {
         if (pragmaErr) {
           reject(pragmaErr);
           return;

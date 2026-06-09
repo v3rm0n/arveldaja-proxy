@@ -1,6 +1,6 @@
 # AGENTS.md - Instructions for AI Assistants
 
-> **This file is for you, the AI assistant.** It contains context and guidelines for working with the arveldaja-proxy project.
+> **This file is for you, the AI assistant.** It contains context and guidelines for working with the arveldaja-proxy project. (`CLAUDE.md` is a symlink to this file.)
 
 ## Project Overview
 
@@ -68,6 +68,11 @@ propose_change:
   description: "Record office supplies expense"
 ```
 
+**Notes:**
+- `body` is required for POST, PUT, and PATCH (not for DELETE)
+- `data` is accepted as a deprecated alias for `body` — always use `body`
+- To group related changes (e.g. all entries of a month-end closing) into one review, first call `create_changeset` and pass the returned ID as `changesetId` on each proposal. Omitting `changesetId` auto-creates a single-change changeset.
+
 **Response will be:**
 ```json
 {
@@ -79,13 +84,17 @@ propose_change:
 }
 ```
 
-### 3. list_pending_changes - Check Status
+### 3. create_changeset - Group Related Proposals
 
-See what changes are currently awaiting human approval.
+Create a named changeset, then pass its ID as `changesetId` to `propose_change` so the human can review and approve the whole group at once.
 
-### 4. list_changesets / get_changeset_details - Review Groupings
+### 4. list_pending_changes - Check Status and Outcomes
 
-Changesets group related changes together. Use these to see the overall state.
+Defaults to changes awaiting human approval. Accepts optional `changesetId` and `status` filters; with `status: "approved"` or `"rejected"` the results include the execution `response` or the rejection/execution `error`, so you can see why a change was rejected or what the API returned.
+
+### 5. list_changesets / get_changeset_details - Review Groupings
+
+Changesets group related changes together. Use these to see the overall state. `list_changesets` accepts an optional `status` filter (`pending`, `approved`, `rejected`). `get_changeset_details` includes each change's `response`/`error` once resolved.
 
 ## Important Guidelines
 
@@ -142,16 +151,22 @@ If a journal payload has `description` but no `title`, the proxy also sets `titl
 
 ## Environment
 
-The project connects to the **demo environment**:
-- Base URL: `https://demo-rmp-api.rik.ee/v1`
-- Authentication: HMAC-SHA-384 signing
-- Database: SQLite (`pending_changes.db`)
+The project connects to the **demo environment** by default:
+- Base URL: `https://demo-rmp-api.rik.ee/v1` (override with `API_BASE_URL`)
+- Authentication: HMAC-SHA-384 signing (`API_KEY_ID`, `API_KEY_PUBLIC`, `API_KEY_PASSWORD`)
+- Database: SQLite (`pending_changes.db` in the project root by default, override with `DB_PATH`; shared by the proxy server and the MCP server, resolved relative to the code so the two processes always find the same file)
+
+Optional hardening env vars (see `.env.example`):
+- `ALLOWED_ORIGINS` - CORS allowlist for browser clients (defaults to the local review UI)
+- `PROXY_AUTH_TOKEN` - when set, all mutating requests (proxy writes, approvals, rejections, deletes) must carry the token via `Authorization: Bearer <token>` or `X-Proxy-Token`
 
 ## File Structure
 
 ```
+public/
+└── index.html            # Review web UI (single page)
 src/
-├── index.ts              # Main Express server
+├── index.ts              # Main Express server (CORS, auth guard, proxy routes)
 ├── mcp-server.ts         # MCP server for AI agents
 ├── db/
 │   └── index.ts          # Database operations
@@ -160,11 +175,25 @@ src/
 ├── routes/
 │   ├── api.ts            # Change management API
 │   ├── changesets.ts     # Changeset management API
-│   └── company.ts        # Company info aggregation
+│   └── company.ts        # Company info and balance aggregation
+├── types/
+│   └── index.ts          # Shared TypeScript types
 └── utils/
     ├── auth.ts           # HMAC-SHA-384 signing
-    └── executor.ts       # Execute approved changes
+    ├── executor.ts       # Forward reads, execute approved changes
+    └── locks.ts          # In-process locks against double approval
 ```
+
+## Working on the Codebase
+
+```bash
+npm run dev        # Run with hot reload (tsx watch)
+npm run build      # Compile TypeScript
+npm run lint       # ESLint
+npm run typecheck  # tsc --noEmit
+```
+
+There is no test suite; CI validates PRs with `lint`, `typecheck`, and `build` — run those before claiming a change works. Note that Express 5 route syntax is used (named wildcards like `/proxy/*splat`, brace groups like `/review{/:id}`).
 
 ## When Helping Users
 
