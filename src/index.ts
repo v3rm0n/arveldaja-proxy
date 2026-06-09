@@ -8,6 +8,7 @@ import { captureMiddleware, isWriteOperation } from './middleware/capture';
 import apiRoutes from './routes/api';
 import companyRoutes from './routes/company';
 import changesetRoutes from './routes/changesets';
+import mcpRoutes from './routes/mcp';
 import { forwardReadRequest } from './utils/executor';
 
 const app = express();
@@ -82,6 +83,11 @@ app.use(express.static(PUBLIC_DIR));
 app.use('/api', apiRoutes);
 app.use('/api', companyRoutes);
 app.use('/api', changesetRoutes);
+
+// MCP endpoint (Streamable HTTP). Every MCP message arrives as a POST, so when
+// PROXY_AUTH_TOKEN is set the auth guard above applies to all MCP traffic —
+// clients must send the token even for read-only tools.
+app.use(mcpRoutes);
 
 // Proxy endpoint - captures writes, forwards reads.
 // Express 5 (path-to-regexp v8) requires named wildcards: '/proxy/*' -> '/proxy/*splat'.
@@ -167,6 +173,7 @@ async function start() {
 ║  API:         http://localhost:${PORT}/api${' '.repeat(23)}║
 ║  Review UI:   http://localhost:${PORT}/review${' '.repeat(20)}║
 ║  Proxy:       http://localhost:${PORT}/proxy${' '.repeat(21)}║
+║  MCP:         http://localhost:${PORT}/mcp${' '.repeat(23)}║
 ╚══════════════════════════════════════════════════════════╝
       `);
     });
