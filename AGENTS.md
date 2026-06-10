@@ -96,14 +96,17 @@ Defaults to changes awaiting human approval. Accepts optional `changesetId` and 
 
 Changesets group related changes together. Use these to see the overall state. `list_changesets` accepts an optional `status` filter (`pending`, `approved`, `rejected`). `get_changeset_details` includes each change's `response`/`error` once resolved.
 
-### 6. get_opening_balances / set_opening_balances - Local Opening Balances
+### 6. get_opening_balances / set_opening_balances / discover_opening_balances - Local Opening Balances
 
-The e-Financials API does not expose the opening balances entered in e-arveldaja when bookkeeping was started there, so balances derived from `/journals` alone can differ from what the software shows (e.g. share capital paid in before bookkeeping moved to e-arveldaja). The proxy stores these opening balances locally (in its SQLite database) and adds them on top of journal-derived balances in `/api/account-balances` and the review UI.
+Opening balances entered in e-arveldaja when bookkeeping was started there live in a journal with `operation_type: INITIAL` that the `/journals` **list** endpoint hides (even when filtered to its effective date) — but `GET /journals/{id}` returns it. Balances derived from the journal list alone therefore differ from what the software shows by exactly the opening amounts (e.g. share capital paid in before bookkeeping moved to e-arveldaja). The proxy stores opening balances locally (in its SQLite database) and adds them on top of journal-derived balances in `/api/account-balances` and the review UI.
 
+- `discover_opening_balances` - find the INITIAL journal and store its amounts locally. Pass `journalId` if known; otherwise the id gaps between the company's listed journals are probed in ascending order (the INITIAL journal's id sits among the earliest ones; ids of other tenants return "No such object"). Probing issues up to `maxProbes` read requests and can take a minute. Read-only towards e-Financials.
 - `get_opening_balances` - list the stored amounts (positive = debit balance, negative = credit balance; a complete set sums to zero)
-- `set_opening_balances` - upsert entries (`amount: 0` removes one). This is local proxy metadata only — it never writes to e-Financials, so it does not go through the approval queue. The human can view and edit the same values in the review UI under "Opening balances".
+- `set_opening_balances` - manually upsert entries (`amount: 0` removes one)
 
-If a user reports that an account balance differs from e-arveldaja by a constant amount across dates, that amount is most likely a missing opening balance.
+These tools touch local proxy metadata only — they never write to e-Financials, so they do not go through the approval queue. The human can view and edit the same values in the review UI under "Opening balances". INITIAL journal postings use type `I` with the amount stated in the account's natural direction (`balance_type` from `/accounts`).
+
+If a user reports that an account balance differs from e-arveldaja by a constant amount across dates, that amount is most likely a missing opening balance — run `discover_opening_balances`.
 
 ## Important Guidelines
 
