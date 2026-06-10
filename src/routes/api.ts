@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getPendingChanges, getPendingChangeById, updatePendingChangeStatus, deletePendingChange } from '../db';
 import { executeChange } from '../utils/executor';
-import { invalidateJournalsCache } from './company';
+import { invalidateJournalsCache } from '../utils/journals';
 import { tryAcquire, release } from '../utils/locks';
 
 const router = Router();

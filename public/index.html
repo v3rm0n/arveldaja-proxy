@@ -998,11 +998,18 @@
                     <div class="opening-balances-body">
                         <p class="ob-hint">
                             Balances carried into e-arveldaja when bookkeeping was started there
-                            (e.g. share capital paid in earlier). The e-Financials API does not expose
-                            them, so they are stored locally in the proxy and added on top of
-                            journal-based balances. Positive = debit balance (assets), negative =
-                            credit balance (equity/liabilities); a complete set sums to zero.
+                            (e.g. share capital paid in earlier). They live in a hidden "INITIAL"
+                            journal that the e-Financials API omits from listings, so the proxy
+                            stores them locally and adds them on top of journal-based balances.
+                            Use Detect to find that journal automatically (or pass its ID if you
+                            know it), or add rows manually. Positive = debit balance (assets),
+                            negative = credit balance (equity/liabilities); a complete set sums to zero.
                         </p>
+                        <div class="ob-add-row" style="margin-bottom: 10px;">
+                            <input id="ob-journal-id" placeholder="INITIAL journal ID (optional)" size="22" />
+                            <button class="btn-create" id="ob-detect-btn" onclick="detectOpeningBalances()">Detect from e-arveldaja</button>
+                            <span class="ob-hint" id="ob-detect-status" style="margin: 0;"></span>
+                        </div>
                         <table class="ob-table" id="ob-table" style="display: none;">
                             <thead>
                                 <tr><th>Account</th><th class="ob-amount">Amount</th><th></th></tr>
@@ -1297,6 +1304,39 @@
                 badge.classList.toggle('unbalanced', data.total !== 0);
             } catch (error) {
                 showOpeningBalanceError(`Failed to load opening balances: ${error.message}`);
+            }
+        }
+
+        async function detectOpeningBalances() {
+            const journalIdInput = document.getElementById('ob-journal-id');
+            const statusEl = document.getElementById('ob-detect-status');
+            const button = document.getElementById('ob-detect-btn');
+            const journalId = journalIdInput.value.trim();
+
+            try {
+                showOpeningBalanceError('');
+                button.disabled = true;
+                statusEl.textContent = journalId
+                    ? 'Fetching journal…'
+                    : 'Scanning for the INITIAL journal — this can take a minute…';
+
+                const response = await fetch('/api/opening-balances/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(journalId ? { journalId: Number(journalId) } : {}),
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.details || data.error || 'Unknown error');
+
+                statusEl.textContent = `Found journal ${data.journal.number} "${data.journal.title}" (${data.journal.effectiveDate}) — ${data.balances.length} account${data.balances.length === 1 ? '' : 's'} stored.`;
+                journalIdInput.value = '';
+                await loadOpeningBalancesList();
+                loadAccountsWithBalances();
+            } catch (error) {
+                statusEl.textContent = '';
+                showOpeningBalanceError(`Detection failed: ${error.message}`);
+            } finally {
+                button.disabled = false;
             }
         }
 
