@@ -1985,60 +1985,61 @@
             `;
         }
 
-        // Render journal entry
+        // Render journal entry. Journal bodies arrive in one of two shapes:
+        // the simplified format the proxy converts on execution
+        // (transactions: [{debit_account, credit_account, amount}]) or the
+        // API-native format (postings: [{accounts_id, type: 'D'|'C', amount}]).
+        // Both must render — an unrecognized shape falls back to raw JSON
+        // rather than an empty table that would falsely read as "Balanced".
         function renderJournalEntry(data) {
-            const lines = data.transactions || [];
             let totalDebit = 0;
             let totalCredit = 0;
-            
-            // Generate table rows - each transaction creates 2 rows (debit and credit)
-            const tableRows = lines.flatMap(line => {
-                const amount = parseFloat(line.amount || 0);
-                const rows = [];
-                
-                // Debit side
-                if (line.debit_account) {
-                    totalDebit += amount;
-                    const debitName = getAccountName(line.debit_account);
-                    rows.push(`
-                        <tr>
-                            <td class="account-cell">
-                                ${escapeHtml(line.debit_account)}
-                                ${debitName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${escapeHtml(debitName)}</span>` : ''}
-                            </td>
-                            <td>${escapeHtml(line.description || '')}</td>
-                            <td class="amount debit">${formatAmount(line.amount)}</td>
-                            <td class="amount"></td>
-                        </tr>
-                    `);
-                }
+            const rows = [];
 
-                // Credit side
-                if (line.credit_account) {
-                    totalCredit += amount;
-                    const creditName = getAccountName(line.credit_account);
-                    rows.push(`
-                        <tr>
-                            <td class="account-cell">
-                                ${escapeHtml(line.credit_account)}
-                                ${creditName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${escapeHtml(creditName)}</span>` : ''}
-                            </td>
-                            <td>${escapeHtml(line.description || '')}</td>
-                            <td class="amount"></td>
-                            <td class="amount credit">${formatAmount(line.amount)}</td>
-                        </tr>
-                    `);
+            const addRow = (account, description, debit, credit) => {
+                const accountName = account ? getAccountName(account) : '';
+                if (debit !== null) totalDebit += debit;
+                if (credit !== null) totalCredit += credit;
+                rows.push(`
+                    <tr>
+                        <td class="account-cell">
+                            ${escapeHtml(account)}
+                            ${accountName ? `<br><span style="font-size: 12px; color: #666; font-weight: normal;">${escapeHtml(accountName)}</span>` : ''}
+                        </td>
+                        <td>${escapeHtml(description || '')}</td>
+                        <td class="amount debit">${debit !== null ? formatAmount(debit) : ''}</td>
+                        <td class="amount credit">${credit !== null ? formatAmount(credit) : ''}</td>
+                    </tr>
+                `);
+            };
+
+            if (Array.isArray(data.transactions) && data.transactions.length > 0) {
+                // Each simplified transaction creates 2 rows (debit and credit)
+                for (const line of data.transactions) {
+                    const amount = parseFloat(line.amount || 0);
+                    if (line.debit_account) addRow(String(line.debit_account), line.description, amount, null);
+                    if (line.credit_account) addRow(String(line.credit_account), line.description, null, amount);
                 }
-                
-                return rows;
-            }).join('');
-            
+            } else if (Array.isArray(data.postings) && data.postings.length > 0) {
+                for (const posting of data.postings) {
+                    const amount = parseFloat(posting.amount || 0);
+                    const account = posting.accounts_id !== undefined && posting.accounts_id !== null
+                        ? String(posting.accounts_id) : '';
+                    if (posting.type === 'C') addRow(account, posting.description, null, amount);
+                    else addRow(account, posting.description, amount, null);
+                }
+            } else {
+                return renderJsonContent(data);
+            }
+
+            const tableRows = rows.join('');
+
             return `
                 <div class="journal-entry">
                     <div class="journal-header">
                         <div>
-                            <div class="journal-title">Journal Entry: ${escapeHtml(data.no || 'New')}</div>
-                            <div>${escapeHtml(data.description || '')}</div>
+                            <div class="journal-title">Journal Entry: ${escapeHtml(data.no || data.number || 'New')}</div>
+                            <div>${escapeHtml(data.description || data.title || '')}</div>
                         </div>
                         <div class="journal-date">${escapeHtml(data.effective_date || '')}</div>
                     </div>
