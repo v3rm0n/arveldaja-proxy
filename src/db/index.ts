@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
-import { PendingChange, Changeset } from '../types';
+import { PendingChange, Changeset, OpeningBalance } from '../types';
 
 // The Express server and the MCP server are separate processes that must share
 // this database. Resolve the path relative to the package root (not the cwd):
@@ -60,6 +60,12 @@ export async function initDatabase(): Promise<void> {
           response TEXT,
           error TEXT,
           FOREIGN KEY (changeset_id) REFERENCES changesets(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS opening_balances (
+          account TEXT PRIMARY KEY,
+          amount REAL NOT NULL,
+          updated_at TEXT NOT NULL
         );
 
         CREATE INDEX IF NOT EXISTS idx_status ON pending_changes(status);
@@ -462,6 +468,65 @@ export async function deleteChangesets(status?: 'pending' | 'approved' | 'reject
       }
 
       resolve(this.changes ?? 0);
+    });
+  });
+}
+
+// Opening balance operations. These are local proxy data (the e-Financials API
+// has no endpoint for opening balances), used to correct journal-derived
+// balance reports — see src/routes/company.ts.
+export async function getOpeningBalances(): Promise<OpeningBalance[]> {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error('Database not initialized'));
+      return;
+    }
+
+    db.all('SELECT * FROM opening_balances ORDER BY account ASC', (err, rows: any[]) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(rows.map(row => ({
+        account: row.account,
+        amount: row.amount,
+        updatedAt: row.updated_at,
+      })));
+    });
+  });
+}
+
+export async function setOpeningBalance(account: string, amount: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error('Database not initialized'));
+      return;
+    }
+
+    db.run(
+      `INSERT INTO opening_balances (account, amount, updated_at)
+       VALUES (?, ?, ?)
+       ON CONFLICT(account) DO UPDATE SET amount = excluded.amount, updated_at = excluded.updated_at`,
+      [account, amount, new Date().toISOString()],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+}
+
+export async function deleteOpeningBalance(account: string): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error('Database not initialized'));
+      return;
+    }
+
+    db.run('DELETE FROM opening_balances WHERE account = ?', account, function (err) {
+      if (err) reject(err);
+      else resolve((this.changes ?? 0) > 0);
     });
   });
 }

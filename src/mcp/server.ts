@@ -23,6 +23,9 @@ import {
   getChangesetWithChanges,
   createPendingChange,
   createChangeset,
+  getOpeningBalances,
+  setOpeningBalance,
+  deleteOpeningBalance,
 } from '../db';
 import { forwardReadRequest } from '../utils/executor';
 
@@ -129,6 +132,42 @@ export function createMcpServer(): Server {
           },
         },
         {
+          name: 'get_opening_balances',
+          description: 'List the opening balances stored locally in the proxy. The e-Financials API does not expose the opening balances entered in e-arveldaja when bookkeeping was started there, so the proxy keeps them locally and adds them on top of journal-derived balances (e.g. in the review UI\'s chart of accounts). Positive amount = debit balance (assets), negative = credit balance (liabilities/equity); a complete set sums to zero.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        {
+          name: 'set_opening_balances',
+          description: 'Set or remove locally stored opening balances (see get_opening_balances). This only adjusts the proxy\'s local balance reporting — it does NOT write anything to e-Financials, so no human approval is needed, but the human can see and edit the same values in the review UI. Pass amount 0 to remove an account\'s entry. Use when journal-derived balances differ from what e-arveldaja shows: the difference at any single date equals the missing opening balance.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              balances: {
+                type: 'array',
+                description: 'Opening balances to upsert (amount 0 removes the entry)',
+                items: {
+                  type: 'object',
+                  properties: {
+                    account: {
+                      type: 'string',
+                      description: 'Account code (e.g. "1020")',
+                    },
+                    amount: {
+                      type: 'number',
+                      description: 'Signed balance: positive = debit (assets), negative = credit (liabilities/equity). 0 removes the entry.',
+                    },
+                  },
+                  required: ['account', 'amount'],
+                },
+              },
+            },
+            required: ['balances'],
+          },
+        },
+        {
           name: 'list_pending_changes',
           description: 'List proposed changes and their review status. Defaults to changes awaiting human approval; pass status "approved" or "rejected" to see resolved changes including their execution result or rejection reason.',
           inputSchema: {
@@ -192,6 +231,12 @@ export function createMcpServer(): Server {
 
         case 'create_changeset':
           return await handleCreateChangeset(args);
+
+        case 'get_opening_balances':
+          return await handleGetOpeningBalances();
+
+        case 'set_opening_balances':
+          return await handleSetOpeningBalances(args);
 
         case 'list_pending_changes':
           return await handleListPendingChanges(args);
@@ -367,6 +412,74 @@ async function handleCreateChangeset(args: any) {
           name: changeset.name,
           status: 'pending',
           note: `Pass this changesetId to propose_change to group changes under this changeset. The human reviews it at ${REVIEW_URL}`,
+        }, null, 2),
+      },
+    ],
+  };
+}
+
+async function handleGetOpeningBalances() {
+  const balances = await getOpeningBalances();
+  const total = Math.round(balances.reduce((sum, b) => sum + b.amount, 0) * 100) / 100;
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          balances,
+          total,
+          note: balances.length === 0
+            ? 'No opening balances stored. Journal-derived balance reports may differ from e-arveldaja if opening balances were entered there when bookkeeping started.'
+            : `These local amounts are added on top of journal-derived balances. A complete set should sum to zero (currently ${total}).`,
+        }, null, 2),
+      },
+    ],
+  };
+}
+
+async function handleSetOpeningBalances(args: any) {
+  const entries = args?.balances;
+  if (!Array.isArray(entries) || entries.length === 0) {
+    throw new Error('balances must be a non-empty array of { account, amount }');
+  }
+
+  const updated: { account: string; amount: number }[] = [];
+  const removed: string[] = [];
+
+  for (const entry of entries) {
+    const account = typeof entry?.account === 'string' ? entry.account.trim() : '';
+    const amount = Number(entry?.amount);
+    if (!account || !Number.isFinite(amount)) {
+      throw new Error(`Each entry needs an account code and a finite amount (got ${JSON.stringify(entry)})`);
+    }
+
+    const rounded = Math.round(amount * 100) / 100;
+    if (rounded === 0) {
+      await deleteOpeningBalance(account);
+      removed.push(account);
+    } else {
+      await setOpeningBalance(account, rounded);
+      updated.push({ account, amount: rounded });
+    }
+  }
+
+  const all = await getOpeningBalances();
+  const total = Math.round(all.reduce((sum, b) => sum + b.amount, 0) * 100) / 100;
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          message: 'Opening balances updated (local proxy data only — nothing was written to e-Financials)',
+          updated,
+          removed,
+          allOpeningBalances: all,
+          total,
+          note: total !== 0
+            ? `Warning: stored opening balances sum to ${total}, not 0. A complete opening balance set is double-entry balanced — an asset debit (e.g. bank) should be matched by an equity/liability credit (negative amount).`
+            : 'Stored opening balances are balanced (sum 0).',
         }, null, 2),
       },
     ],

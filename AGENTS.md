@@ -96,6 +96,15 @@ Defaults to changes awaiting human approval. Accepts optional `changesetId` and 
 
 Changesets group related changes together. Use these to see the overall state. `list_changesets` accepts an optional `status` filter (`pending`, `approved`, `rejected`). `get_changeset_details` includes each change's `response`/`error` once resolved.
 
+### 6. get_opening_balances / set_opening_balances - Local Opening Balances
+
+The e-Financials API does not expose the opening balances entered in e-arveldaja when bookkeeping was started there, so balances derived from `/journals` alone can differ from what the software shows (e.g. share capital paid in before bookkeeping moved to e-arveldaja). The proxy stores these opening balances locally (in its SQLite database) and adds them on top of journal-derived balances in `/api/account-balances` and the review UI.
+
+- `get_opening_balances` - list the stored amounts (positive = debit balance, negative = credit balance; a complete set sums to zero)
+- `set_opening_balances` - upsert entries (`amount: 0` removes one). This is local proxy metadata only — it never writes to e-Financials, so it does not go through the approval queue. The human can view and edit the same values in the review UI under "Opening balances".
+
+If a user reports that an account balance differs from e-arveldaja by a constant amount across dates, that amount is most likely a missing opening balance.
+
 ## Important Guidelines
 
 ### ✅ DO

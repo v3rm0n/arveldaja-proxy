@@ -44,6 +44,16 @@ export interface TransactionLine {
   client_id: number | null;
 }
 
+// Account balance carried into e-arveldaja when bookkeeping was started there.
+// The e-Financials API does not expose these, so the proxy stores them locally
+// and adds them on top of journal-derived balances. Positive = debit balance
+// (assets), negative = credit balance (liabilities/equity).
+export interface OpeningBalance {
+  account: string;
+  amount: number;
+  updatedAt: string;
+}
+
 export interface ApiCredentials {
   apiKeyId: string;
   apiKeyPublic: string;
