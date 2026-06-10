@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { forwardReadRequest } from '../utils/executor';
+import { fetchAllJournals } from '../utils/journals';
+import { discoverAndStoreOpeningBalances } from '../utils/openingBalances';
 import { getOpeningBalances, setOpeningBalance, deleteOpeningBalance } from '../db';
 
 const router = Router();
@@ -28,64 +30,6 @@ interface BalanceTracker {
 
 // Helper functions
 const round2 = (n: number): number => Math.round(n * 100) / 100;
-
-// Short-lived in-memory cache for the full journal list. A single balance page
-// load can trigger several requests (preset clicks, hide-zero toggle, refresh),
-// each of which would otherwise re-paginate the entire journal history from the
-// upstream API. Journal data only changes when an approved write is executed, so
-// a short TTL is a safe trade-off. A single in-flight promise is shared so
-// concurrent requests don't all fan out a full re-fetch.
-const JOURNALS_CACHE_TTL_MS = 30_000;
-let journalsCache: { data: any[]; expiresAt: number } | null = null;
-let journalsInFlight: Promise<any[]> | null = null;
-
-async function fetchAllJournalsUncached(): Promise<any[]> {
-  const allJournals: any[] = [];
-  let page = 1;
-  let totalPages = 1;
-
-  do {
-    const response = await forwardReadRequest('GET', '/journals', { page: String(page), per_page: '100' }, {});
-
-    if (response && Array.isArray(response.items)) {
-      allJournals.push(...response.items);
-      totalPages = response.total_pages || 1;
-    } else if (Array.isArray(response)) {
-      allJournals.push(...response);
-      break;
-    }
-
-    page++;
-  } while (page <= totalPages);
-
-  return allJournals;
-}
-
-async function fetchAllJournals(): Promise<any[]> {
-  if (journalsCache && journalsCache.expiresAt > Date.now()) {
-    return journalsCache.data;
-  }
-
-  // Coalesce concurrent callers onto a single in-flight fetch.
-  if (!journalsInFlight) {
-    journalsInFlight = fetchAllJournalsUncached()
-      .then((data) => {
-        journalsCache = { data, expiresAt: Date.now() + JOURNALS_CACHE_TTL_MS };
-        return data;
-      })
-      .finally(() => {
-        journalsInFlight = null;
-      });
-  }
-
-  return journalsInFlight;
-}
-
-// Invalidate the journal cache. Call this after a write is executed so freshly
-// approved journals show up immediately instead of waiting for the TTL.
-export function invalidateJournalsCache(): void {
-  journalsCache = null;
-}
 
 async function fetchAccountDimensions(): Promise<Map<string, AccountDimension>> {
   const dimensions = await forwardReadRequest('GET', '/account_dimensions', {}, {});
@@ -314,6 +258,39 @@ router.put('/opening-balances/:account', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to save opening balance',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// POST /api/opening-balances/discover  body: { journalId?: number, maxProbes?: number }
+// Finds the company's INITIAL journal (the opening balance entry, hidden from
+// the /journals list but retrievable by id), converts its postings to signed
+// opening balances and stores them locally. Pass journalId when known (visible
+// in e-arveldaja); otherwise the id gaps between listed journals are probed in
+// ascending order (the INITIAL journal sits among the earliest ids), which can
+// take a minute. Read-only towards e-Financials.
+router.post('/opening-balances/discover', async (req, res) => {
+  try {
+    const journalId = req.body?.journalId !== undefined && req.body.journalId !== ''
+      ? Number(req.body.journalId)
+      : undefined;
+    const maxProbes = req.body?.maxProbes !== undefined ? Number(req.body.maxProbes) : undefined;
+
+    if (journalId !== undefined && (!Number.isInteger(journalId) || journalId <= 0)) {
+      return res.status(400).json({ success: false, error: 'journalId must be a positive integer' });
+    }
+    if (maxProbes !== undefined && (!Number.isInteger(maxProbes) || maxProbes <= 0)) {
+      return res.status(400).json({ success: false, error: 'maxProbes must be a positive integer' });
+    }
+
+    const result = await discoverAndStoreOpeningBalances({ journalId, maxProbes });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error discovering opening balances:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to discover opening balances',
       details: error instanceof Error ? error.message : 'Unknown error',
     });
   }

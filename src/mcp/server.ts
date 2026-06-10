@@ -28,6 +28,7 @@ import {
   deleteOpeningBalance,
 } from '../db';
 import { forwardReadRequest } from '../utils/executor';
+import { discoverAndStoreOpeningBalances } from '../utils/openingBalances';
 
 // Where the human reviews proposals; must match the Express server's port.
 const REVIEW_URL = `http://localhost:${process.env.PORT || 3000}/review`;
@@ -168,6 +169,23 @@ export function createMcpServer(): Server {
           },
         },
         {
+          name: 'discover_opening_balances',
+          description: 'Find the opening balance journal in e-Financials and store its amounts as the proxy\'s local opening balances. Opening balances entered in e-arveldaja live in a journal with operation_type INITIAL that the /journals list hides, but GET /journals/{id} returns. Pass journalId if known (visible in e-arveldaja). Without it, the id gaps between the company\'s listed journals are probed in ascending order (the INITIAL journal sits among the earliest ids) — this issues up to maxProbes read requests and can take a minute. Read-only towards e-Financials; only the proxy\'s local opening_balances store is updated.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              journalId: {
+                type: 'integer',
+                description: 'Optional: id of the INITIAL journal, if known. Skips probing.',
+              },
+              maxProbes: {
+                type: 'integer',
+                description: 'Optional: probe budget when scanning for the journal (default 500, max 2000)',
+              },
+            },
+          },
+        },
+        {
           name: 'list_pending_changes',
           description: 'List proposed changes and their review status. Defaults to changes awaiting human approval; pass status "approved" or "rejected" to see resolved changes including their execution result or rejection reason.',
           inputSchema: {
@@ -237,6 +255,9 @@ export function createMcpServer(): Server {
 
         case 'set_opening_balances':
           return await handleSetOpeningBalances(args);
+
+        case 'discover_opening_balances':
+          return await handleDiscoverOpeningBalances(args);
 
         case 'list_pending_changes':
           return await handleListPendingChanges(args);
@@ -480,6 +501,35 @@ async function handleSetOpeningBalances(args: any) {
           note: total !== 0
             ? `Warning: stored opening balances sum to ${total}, not 0. A complete opening balance set is double-entry balanced — an asset debit (e.g. bank) should be matched by an equity/liability credit (negative amount).`
             : 'Stored opening balances are balanced (sum 0).',
+        }, null, 2),
+      },
+    ],
+  };
+}
+
+async function handleDiscoverOpeningBalances(args: any) {
+  const journalId = args?.journalId !== undefined ? Number(args.journalId) : undefined;
+  const maxProbes = args?.maxProbes !== undefined ? Number(args.maxProbes) : undefined;
+
+  if (journalId !== undefined && (!Number.isInteger(journalId) || journalId <= 0)) {
+    throw new Error('journalId must be a positive integer');
+  }
+  if (maxProbes !== undefined && (!Number.isInteger(maxProbes) || maxProbes <= 0)) {
+    throw new Error('maxProbes must be a positive integer');
+  }
+
+  const result = await discoverAndStoreOpeningBalances({ journalId, maxProbes });
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          message: 'Opening balances discovered and stored locally (nothing was written to e-Financials)',
+          ...result,
+          note: result.total !== 0
+            ? `Warning: the extracted opening balances sum to ${result.total}, not 0 — check the source journal.`
+            : 'The stored opening balances are balanced (sum 0) and will now be included in balance reports.',
         }, null, 2),
       },
     ],
