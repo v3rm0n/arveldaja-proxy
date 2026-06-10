@@ -754,6 +754,107 @@
             color: #1a365d;
         }
 
+        .opening-balances {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .opening-balances-header {
+            padding: 8px 15px;
+            font-size: 13px;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fcfcfd;
+            user-select: none;
+        }
+
+        .opening-balances-header:hover {
+            background: #f0f0f0;
+        }
+
+        .opening-balances .toggle-icon {
+            font-size: 11px;
+            transition: transform 0.2s;
+        }
+
+        .opening-balances.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .opening-balances.collapsed .opening-balances-body {
+            display: none;
+        }
+
+        .opening-balances-body {
+            padding: 10px 15px;
+        }
+
+        .ob-badge {
+            color: #666;
+            font-weight: normal;
+            margin-left: 6px;
+        }
+
+        .ob-badge.unbalanced {
+            color: #b7791f;
+        }
+
+        .ob-hint {
+            font-size: 12px;
+            color: #666;
+            margin: 0 0 10px;
+            max-width: 720px;
+        }
+
+        .ob-table {
+            font-size: 13px;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .ob-table th,
+        .ob-table td {
+            padding: 4px 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        .ob-table th.ob-amount,
+        .ob-table td.ob-amount {
+            text-align: right;
+            font-family: 'Monaco', monospace;
+        }
+
+        .ob-remove {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #e53e3e;
+            font-size: 14px;
+            padding: 0 4px;
+        }
+
+        .ob-add-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .ob-add-row input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .ob-error {
+            color: #e53e3e;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
         .accounts-table .balance-cell {
             text-align: right;
             font-family: 'Monaco', monospace;
@@ -887,6 +988,33 @@
                             Hide zero balances
                         </label>
                         <button class="btn-create" onclick="loadAccountsWithBalances()" style="margin-left: auto;">Refresh</button>
+                    </div>
+                </div>
+                <div class="opening-balances collapsed" id="opening-balances-section">
+                    <div class="opening-balances-header" onclick="toggleOpeningBalances()">
+                        <span>Opening balances<span class="ob-badge" id="ob-badge"></span></span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="opening-balances-body">
+                        <p class="ob-hint">
+                            Balances carried into e-arveldaja when bookkeeping was started there
+                            (e.g. share capital paid in earlier). The e-Financials API does not expose
+                            them, so they are stored locally in the proxy and added on top of
+                            journal-based balances. Positive = debit balance (assets), negative =
+                            credit balance (equity/liabilities); a complete set sums to zero.
+                        </p>
+                        <table class="ob-table" id="ob-table" style="display: none;">
+                            <thead>
+                                <tr><th>Account</th><th class="ob-amount">Amount</th><th></th></tr>
+                            </thead>
+                            <tbody id="ob-rows"></tbody>
+                        </table>
+                        <div class="ob-add-row">
+                            <input id="ob-account" placeholder="Account (e.g. 1020)" size="14" />
+                            <input id="ob-amount" type="number" step="0.01" placeholder="Amount (+debit / −credit)" />
+                            <button class="btn-create" onclick="saveOpeningBalance()">Save</button>
+                        </div>
+                        <div class="ob-error" id="ob-error" style="display: none;"></div>
                     </div>
                 </div>
                 <div class="accounts-summary" id="accounts-summary" style="display: none;"></div>
@@ -1110,26 +1238,141 @@
         function toggleAccounts() {
             const section = document.getElementById('accounts-section');
             section.classList.toggle('collapsed');
-            
+
             // Initialize default dates if not already set
             if (!section.classList.contains('collapsed')) {
                 initializeBalanceDates();
+                loadOpeningBalancesList();
             }
+        }
+
+        // --- Opening balances editor ---
+        // Opening balances entered in e-arveldaja are not exposed by its API, so
+        // the proxy stores them locally (see /api/opening-balances) and adds them
+        // on top of journal-derived balances.
+
+        function toggleOpeningBalances() {
+            document.getElementById('opening-balances-section').classList.toggle('collapsed');
+        }
+
+        function showOpeningBalanceError(message) {
+            const errorEl = document.getElementById('ob-error');
+            errorEl.textContent = message || '';
+            errorEl.style.display = message ? 'block' : 'none';
+        }
+
+        async function loadOpeningBalancesList() {
+            try {
+                const response = await fetch('/api/opening-balances');
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'Unknown error');
+
+                const table = document.getElementById('ob-table');
+                const rowsEl = document.getElementById('ob-rows');
+                const badge = document.getElementById('ob-badge');
+
+                if (data.balances.length === 0) {
+                    table.style.display = 'none';
+                    badge.textContent = '(none configured)';
+                    badge.classList.remove('unbalanced');
+                    return;
+                }
+
+                rowsEl.innerHTML = data.balances.map(b => `
+                    <tr>
+                        <td>${escapeHtml(b.account)}</td>
+                        <td class="ob-amount">${formatCurrency(b.amount)}</td>
+                        <td><button class="ob-remove" title="Remove" data-account="${escapeAttr(b.account)}" onclick="removeOpeningBalance(this.dataset.account)">✕</button></td>
+                    </tr>
+                `).join('') + `
+                    <tr>
+                        <td><strong>Sum</strong></td>
+                        <td class="ob-amount"><strong>${formatCurrency(data.total)}</strong></td>
+                        <td></td>
+                    </tr>
+                `;
+                table.style.display = '';
+
+                badge.textContent = `(${data.balances.length} account${data.balances.length === 1 ? '' : 's'}${data.total !== 0 ? `, sum ${formatCurrency(data.total)} — should be 0.00` : ''})`;
+                badge.classList.toggle('unbalanced', data.total !== 0);
+            } catch (error) {
+                showOpeningBalanceError(`Failed to load opening balances: ${error.message}`);
+            }
+        }
+
+        async function saveOpeningBalance() {
+            const accountInput = document.getElementById('ob-account');
+            const amountInput = document.getElementById('ob-amount');
+            const account = accountInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!account) {
+                showOpeningBalanceError('Account is required');
+                return;
+            }
+            if (!isFinite(amount)) {
+                showOpeningBalanceError('Amount must be a number');
+                return;
+            }
+
+            try {
+                showOpeningBalanceError('');
+                const response = await fetch(`/api/opening-balances/${encodeURIComponent(account)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount }),
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'Unknown error');
+
+                accountInput.value = '';
+                amountInput.value = '';
+                await loadOpeningBalancesList();
+                loadAccountsWithBalances();
+            } catch (error) {
+                showOpeningBalanceError(`Failed to save: ${error.message}`);
+            }
+        }
+
+        async function removeOpeningBalance(account) {
+            try {
+                showOpeningBalanceError('');
+                const response = await fetch(`/api/opening-balances/${encodeURIComponent(account)}`, {
+                    method: 'DELETE',
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'Unknown error');
+
+                await loadOpeningBalancesList();
+                loadAccountsWithBalances();
+            } catch (error) {
+                showOpeningBalanceError(`Failed to remove: ${error.message}`);
+            }
+        }
+
+        // Format a Date as YYYY-MM-DD using its *local* components. toISOString()
+        // would convert to UTC first, which shifts local-midnight dates one day
+        // back in UTC+ timezones (e.g. Jan 1 becomes Dec 31 of the previous year).
+        function toLocalISODate(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
         // Initialize balance date inputs with default values (start of year to today)
         function initializeBalanceDates() {
             const startInput = document.getElementById('balance-start-date');
             const endInput = document.getElementById('balance-end-date');
-            
+
             if (startInput && !startInput.value) {
                 const today = new Date();
                 const startOfYear = new Date(today.getFullYear(), 0, 1);
-                startInput.value = startOfYear.toISOString().split('T')[0];
+                startInput.value = toLocalISODate(startOfYear);
             }
-            
+
             if (endInput && !endInput.value) {
-                endInput.value = new Date().toISOString().split('T')[0];
+                endInput.value = toLocalISODate(new Date());
             }
         }
 
@@ -1165,8 +1408,8 @@
                     return; // Custom - don't change dates
             }
             
-            startInput.value = startDate.toISOString().split('T')[0];
-            endInput.value = endDate.toISOString().split('T')[0];
+            startInput.value = toLocalISODate(startDate);
+            endInput.value = toLocalISODate(endDate);
             
             // Auto-refresh when selecting a preset
             if (period !== 'custom') {
@@ -1265,6 +1508,7 @@
                     <strong>Opening:</strong> €${formatCurrency(totalOpening)} | 
                     <strong>Closing:</strong> €${formatCurrency(totalClosing)} | 
                     <strong>Change:</strong> <span style="color: ${totalChange >= 0 ? '#38a169' : '#e53e3e'}">€${formatCurrency(totalChange)}</span>
+                    ${data.openingBalancesConfigured === false ? `<div style="margin-top: 6px; color: #b7791f; font-size: 12px;">⚠️ Computed from journal entries only — opening balances entered in e-arveldaja are not exposed by its API. If balances differ from the software, add them under "Opening balances" above.</div>` : ''}
                 `;
                 summaryEl.style.display = 'block';
                 

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { forwardReadRequest } from '../utils/executor';
+import { getOpeningBalances, setOpeningBalance, deleteOpeningBalance } from '../db';
 
 const router = Router();
 
@@ -104,7 +105,7 @@ function getDimensionName(dimId: number, dimensionMap: Map<string, AccountDimens
   return dimInfo?.title_est || dimInfo?.title_eng || `Dimension ${dimId}`;
 }
 
-function updateBalance(tracker: BalanceTracker, posting: Posting, journalDate: Date, start: Date, end: Date): void {
+function updateBalance(tracker: BalanceTracker, posting: Pick<Posting, 'type' | 'amount'>, journalDate: Date, start: Date, end: Date): void {
   const amount = posting.amount;
   
   if (journalDate < start) {
@@ -268,6 +269,77 @@ router.get('/account-dimensions', async (req, res) => {
   }
 });
 
+// Opening balances: account balances carried into e-arveldaja when bookkeeping
+// was started there. The e-Financials API has no endpoint for them, so they are
+// stored locally and added on top of journal-derived balances. Positive amount
+// = debit balance (assets), negative = credit balance (liabilities/equity); a
+// complete set should sum to zero.
+
+// GET /api/opening-balances
+router.get('/opening-balances', async (req, res) => {
+  try {
+    const balances = await getOpeningBalances();
+    res.json({
+      success: true,
+      balances,
+      total: round2(balances.reduce((sum, b) => sum + b.amount, 0)),
+    });
+  } catch (error) {
+    console.error('Error fetching opening balances:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch opening balances',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// PUT /api/opening-balances/:account  body: { "amount": 2500 }
+router.put('/opening-balances/:account', async (req, res) => {
+  try {
+    const account = String(req.params.account).trim();
+    const amount = Number(req.body?.amount);
+
+    if (!account) {
+      return res.status(400).json({ success: false, error: 'Account is required' });
+    }
+    if (!Number.isFinite(amount)) {
+      return res.status(400).json({ success: false, error: 'amount must be a finite number' });
+    }
+
+    await setOpeningBalance(account, round2(amount));
+    res.json({ success: true, account, amount: round2(amount) });
+  } catch (error) {
+    console.error('Error saving opening balance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save opening balance',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// DELETE /api/opening-balances/:account
+router.delete('/opening-balances/:account', async (req, res) => {
+  try {
+    const account = String(req.params.account).trim();
+    const removed = await deleteOpeningBalance(account);
+
+    if (!removed) {
+      return res.status(404).json({ success: false, error: `No opening balance for account ${account}` });
+    }
+
+    res.json({ success: true, account });
+  } catch (error) {
+    console.error('Error deleting opening balance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete opening balance',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 // GET /api/account-balances?startDate=2024-01-01&endDate=2024-12-31&accounts=1750&includeDimensions=true
 router.get('/account-balances', async (req, res) => {
   try {
@@ -286,10 +358,11 @@ router.get('/account-balances', async (req, res) => {
 
     const shouldIncludeDimensions = includeDimensions === 'true' || includeDimensions === '1';
 
-    const [accountsData, dimensionMap, journals] = await Promise.all([
+    const [accountsData, dimensionMap, journals, openingBalanceRows] = await Promise.all([
       forwardReadRequest('GET', '/accounts', {}, {}),
       fetchAccountDimensions(),
       fetchAllJournals(),
+      getOpeningBalances(),
     ]);
 
     const accountMap = new Map<string, any>();
@@ -363,6 +436,16 @@ router.get('/account-balances', async (req, res) => {
       }
     }
 
+    // Apply stored opening balances (see GET/PUT /api/opening-balances). They
+    // represent the balance carried into e-arveldaja before any journal entry
+    // existed, so they always feed the period's opening balance.
+    for (const ob of openingBalanceRows) {
+      const tracker = accountBalances.get(ob.account);
+      if (tracker) {
+        tracker.openingBalance += ob.amount;
+      }
+    }
+
     // Build response
     const result = targetAccountNumbers.map(accNum => {
       const acc = accountMap.get(accNum);
@@ -391,6 +474,7 @@ router.get('/account-balances', async (req, res) => {
       period: { startDate: String(startDate), endDate: String(endDate) },
       totalJournalsProcessed: journals.length,
       skippedJournals,
+      openingBalancesConfigured: openingBalanceRows.length > 0,
       includeDimensions: shouldIncludeDimensions,
       balances: result,
     });
